@@ -1,4 +1,3 @@
-<!-- src/views/base/profile/index.vue -->
 <template>
   <div class="profile-container">
     <el-card class="profile-card">
@@ -19,13 +18,13 @@
           </el-avatar>
           <div class="avatar-upload">
             <el-upload
-              action="#"
+              :action="uploadUrl"
               :show-file-list="false"
               :before-upload="beforeAvatarUpload"
               :on-change="handleAvatarChange"
               accept="image/*"
             >
-              <el-button type="primary" size="small" :icon="Camera">更换头像</el-button>
+<!--              <el-button type="primary" size="small" :icon="Camera">更换头像</el-button>-->
             </el-upload>
           </div>
         </div>
@@ -38,24 +37,24 @@
           label-width="100px"
           class="info-form"
         >
-          <el-form-item label="用户ID" prop="id">
-            <el-input v-model="userInfo.id" disabled />
-          </el-form-item>
+<!--          <el-form-item label="用户ID" prop="id">-->
+<!--            <el-input v-model="userInfo.id" disabled />-->
+<!--          </el-form-item>-->
 
           <el-form-item label="用户名" prop="username">
             <el-input v-model="userInfo.username" disabled />
           </el-form-item>
 
           <el-form-item label="昵称" prop="nickname">
-            <el-input v-model="userInfo.nickname" placeholder="请输入昵称" />
+            <el-input v-model="userInfo.nickname" placeholder="请输入昵称" disabled/>
           </el-form-item>
 
           <el-form-item label="手机号" prop="phone">
-            <el-input v-model="userInfo.phone" placeholder="请输入手机号" />
+            <el-input v-model="userInfo.phone" placeholder="请输入手机号" disabled/>
           </el-form-item>
 
           <el-form-item label="邮箱" prop="email">
-            <el-input v-model="userInfo.email" placeholder="请输入邮箱" />
+            <el-input v-model="userInfo.email" placeholder="请输入邮箱" disabled/>
           </el-form-item>
 
           <el-form-item label="状态" prop="status">
@@ -76,10 +75,10 @@
           </el-form-item>
 
           <el-form-item>
-            <el-button type="primary" @click="saveUserInfo" :loading="saving">
-              保存修改
-            </el-button>
-            <el-button @click="resetForm">重置</el-button>
+<!--            <el-button type="primary" @click="saveUserInfo" :loading="saving">-->
+<!--              保存修改-->
+<!--            </el-button>-->
+<!--            <el-button @click="resetForm">重置</el-button>-->
             <el-button type="warning" @click="showPasswordDialog">修改密码</el-button>
           </el-form-item>
         </el-form>
@@ -141,11 +140,12 @@ import { ElMessage, type FormInstance, type UploadFile } from 'element-plus'
 import { User, Camera } from '@element-plus/icons-vue'
 import type { UploadProps } from 'element-plus'
 import {userApi} from "@/api";
-import type {UserInfo, UserRequestData} from "@/types";
+import type {UserRequestData} from "@/types";
 
-const userStore = useUserStore()
 const formRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
+const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL+'/files/uploadAvatar')
+const userStore = useUserStore()
 // 状态变量
 const loading = ref(false)
 // 用户信息（根据UserInfo接口定义）
@@ -277,7 +277,12 @@ const saveUserInfo = () => {
       // 模拟API调用
       setTimeout(() => {
         // 更新用户store
-        userStore.updateUserInfo({
+        userStore.setUserInfo({
+          createTime: userInfo.updateTime,
+          id: userInfo.id,
+          status: userInfo.status,
+          updateTime: userInfo.updateTime,
+          username: userInfo.username,
           nickname: userInfo.nickname,
           phone: userInfo.phone,
           email: userInfo.email,
@@ -310,11 +315,12 @@ const submitPasswordChange = () => {
       changingPassword.value = true
       // 准备提交数据
       const submitData: UserRequestData = {
+        avatar: "", email: "", phone: "", roleIds: [], status: 0,
         id: userInfo.id,
         username: userInfo.username,
         nickname: userInfo.nickname,
         password: passwordForm.newPassword,
-        confirmPassword: passwordForm.confirmPassword,
+        confirmPassword: passwordForm.confirmPassword
       }
       try{
         const res = await userApi.updateUserPwd(submitData)
@@ -331,8 +337,8 @@ const submitPasswordChange = () => {
         }else{
           ElMessage.success(res.msg)
         }
-      }catch (e){
-        ElMessage.success(e)
+      }catch (error){
+        ElMessage.success(error as string)
       }finally{
         changingPassword.value = false
       }

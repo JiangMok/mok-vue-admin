@@ -53,7 +53,14 @@
 <!--        <el-table-column type="selection" width="55"/>-->
 
         <el-table-column prop="username" label="用户名" width="160"/>
-        <el-table-column prop="nickname" label="昵称" width="200"/>
+        <el-table-column prop="avatar" label="头像" width="65">
+          <template #default="{ row }">
+            <el-avatar :size="40" :src="row.avatar" class="user-avatar">
+              {{ row.nickname?.charAt(0) || row.username?.charAt(0) || 'U' }}
+            </el-avatar>
+          </template>
+        </el-table-column>
+        <el-table-column prop="nickname" label="昵称" width="150"/>
         <el-table-column prop="phone" label="手机号" width="130"/>
         <el-table-column prop="email" label="邮箱" width="230"/>
 
@@ -140,7 +147,7 @@
     <UserDetail
       v-model:visible="detailDialogVisible"
       :userId="selectedUserId"
-      :user-data="selectedUserData"
+      :user-data="selectedUserData || undefined"
       @edit="handleEditFromDetail"
     />
   </div>
@@ -184,12 +191,6 @@ const detailDialogVisible = ref(false)
 const selectedUserId = ref('')
 const selectedUserData = ref<UserInfo | null>(null)
 
-// 搜索表单 - 修改为更明确的类型定义
-interface SearchForm {
-  keyword: string;
-  status?: number | undefined;  // 使用 undefined 而不是空字符串
-}
-
 //=================页面需要的函数=================================
 /**
  * 获取用户列表
@@ -213,9 +214,10 @@ const fetchUserList = async () => {
     // }
 
     // 清除空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined) {
-        delete params[key]
+    const cleanParams: Record<string, any> = { ...params }
+    Object.keys(cleanParams).forEach(key => {
+      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
+        delete cleanParams[key]
       }
     })
     console.log('请求用户列表参数:', params)
@@ -307,7 +309,7 @@ const resetPwd = async (row: UserInfo) => {
       }
       fetchUserList()
     }catch(e){
-      ElMessage.error(e.msg)
+      ElMessage.error(e as string)
     }
   } catch (error) {
     if (error !== 'cancel') {

@@ -8,10 +8,10 @@ import type {AxiosInstance, AxiosResponse, InternalAxiosRequestConfig} from 'axi
 import axios from 'axios'; //http客户端库.用于发送http请求
 import {ElMessage} from 'element-plus' //引入Elements-plus的消息组件,用于显示提示
 import router from '@/router' //导入VUE router实例,用于页面导航
-
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
 //创建axios实例
 const service: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8080/api',//后端接口基础地址
+  baseURL,
   timeout: 10000,//10秒超时
   headers: {
     //指定请求体为json格式
@@ -58,13 +58,13 @@ service.interceptors.request.use(
  */
 service.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('响应成功', response.config.url)
+    // console.log('响应成功', response.config.url)
     //检查响应结构是否符合我们的ApiResponse
     //获取响应数据:后端返回的业务结果
     const data = response.data
     //如果有业务错误码(不是200),统一处理
     if (data.code !== undefined && data.code !== 200) {
-      console.error("响应拦截器:" + data.msg || '请求失败')
+      // console.error("响应拦截器:" + data.msg || '请求失败')
       ElMessage.error(data.msg)
       //将错误信息返回给调用方
       return Promise.reject(data)
@@ -73,7 +73,7 @@ service.interceptors.response.use(
     return response.data
   },
   async (error) => {
-    console.log('响应错误', error.response?.status, error.config?.url)
+    // console.log('响应错误', error.response?.status, error.config?.url)
     //获取原始请求配置
     const originalRequest = error.config
     //如果是401错误 ==> token过期
@@ -110,7 +110,7 @@ service.interceptors.response.use(
         // 这里调用刷新token的接口（你的后端需要提供）
         // 假设刷新接口是 /auth/refresh，用refreshToken获取新token
         const refreshResponse = await axios.post(
-          'http://localhost:8080/api/auth/refresh?refreshToken={ refreshToken }',
+          baseURL+`/api/auth/refresh?refreshToken=${ refreshToken }`,
         )
         // 如果有刷新接口，可以这样处理：
         const newToken = refreshResponse.data.data.token

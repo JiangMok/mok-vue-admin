@@ -11,8 +11,8 @@
       <div class="header-right">
         <el-dropdown @command="handleCommand">
           <span class="user-info">
-            <el-avatar :size="32">
-              {{ nickname.charAt(0) }}
+            <el-avatar :src="avatar" :size="32">
+              {{ nickname?.charAt(0) || username?.charAt(0) || 'U' }}
             </el-avatar>
             <span class="username">{{ nickname }}</span>
             <el-icon><ArrowDown /></el-icon>
@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowDown } from '@element-plus/icons-vue'
 import MenuItem from '@/components/MenuItem.vue'
@@ -94,7 +94,7 @@ const currentRoute = computed(() => {
 
 // 菜单数据
 const menus = computed(() => {
-  console.log('Layout获取菜单:', userStore.menus)
+  // console.log('Layout获取菜单:', userStore.menus)
   return userStore.menus
 })
 
@@ -108,6 +108,10 @@ const nickname = computed(() => {
   return userStore.nickname || '用户'
 })
 
+const avatar = computed(() => {
+  return userStore.avatar
+})
+
 // 下拉菜单命令处理
 const handleCommand = async (command: string) => {
   if (command === 'logout') {
@@ -119,16 +123,16 @@ const handleCommand = async (command: string) => {
 }
 
 // 监听路由变化
-watch(() => route.path, (newPath) => {
-  console.log('路由变化:', newPath)
-})
+// watch(() => route.path, (newPath) => {
+//   console.log('路由变化:', newPath)
+// })
 
-onMounted(() => {
-  console.log('布局组件加载完成')
-  console.log('当前菜单:', menus.value)
-  console.log('当前路由:', route.path)
-  console.log('用户是否登录:', userStore.isLoggedIn)
-})
+// onMounted(() => {
+//   console.log('布局组件加载完成')
+//   console.log('当前菜单:', menus.value)
+//   console.log('当前路由:', route.path)
+//   console.log('用户是否登录:', userStore.isLoggedIn)
+// })
 </script>
 
 <style scoped>

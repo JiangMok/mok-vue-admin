@@ -68,7 +68,7 @@
               type="primary"
               size="small"
               @click="handleEdit(row)"
-              v-if="userStore.hasPermission('system:role:edit')"
+              v-if="userStore.hasPermission('system:role:edit') && row.roleCode !== 'ROLE_ADMIN' "
             >
               编辑
             </el-button>
@@ -85,7 +85,7 @@
               type="danger"
               size="small"
               @click="handleDelete(row)"
-              v-if="userStore.hasPermission('system:role:delete')"
+              v-if="userStore.hasPermission('system:role:delete') && row.roleCode !== 'ROLE_ADMIN'"
             >
               删除
             </el-button>
@@ -201,9 +201,10 @@ const fetchList = async () => {
       ...searchForm
     }
     // 清除空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined) {
-        delete params[key]
+    const cleanParams: Record<string, any> = { ...params }
+    Object.keys(cleanParams).forEach(key => {
+      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
+        delete cleanParams[key]
       }
     })
     const res = await roleApi.getPage(params)

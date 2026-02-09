@@ -36,7 +36,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getIconComponent } from '@/utils/icons'
 import type { MenuItem as MenuItemType } from '@/types'

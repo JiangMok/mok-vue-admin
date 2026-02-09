@@ -5,10 +5,12 @@ import { resolve } from 'path'
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd())
-  const apiBaseUrl = env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
-  // 解析基础URL
+  // 只在开发环境设置 API 地址，生产环境使用相对路径
   const isDevelopment = mode === 'development'
+  const apiBaseUrl = isDevelopment
+    ? env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+    : '' // 生产环境使用相对路径
 
   return {
     plugins: [vue()],
@@ -21,12 +23,12 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         '/api': {
-          target: apiBaseUrl.replace('/api', ''),
+          target: apiBaseUrl,
           changeOrigin: true,
           rewrite: (path) => path
         },
         '/uploads': {
-          target: apiBaseUrl.replace('/api', ''),
+          target: apiBaseUrl,
           changeOrigin: true,
           rewrite: (path) => path
         }
@@ -38,6 +40,8 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: mode === 'development',
+      // 生产环境使用相对路径
+      emptyOutDir: true,
       rollupOptions: {
         output: {
           chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -48,24 +52,3 @@ export default defineConfig(({ mode }) => {
     }
   }
 })
-
-
-/////////////////////////////////////////////////////////////////////////////////////
-// import { fileURLToPath, URL } from 'node:url'
-//
-// import { defineConfig } from 'vite'
-// import vue from '@vitejs/plugin-vue'
-// import vueDevTools from 'vite-plugin-vue-devtools'
-//
-// // https://vite.dev/config/
-// export default defineConfig({
-//   plugins: [
-//     vue(),
-//     vueDevTools(),
-//   ],
-//   resolve: {
-//     alias: {
-//       '@': fileURLToPath(new URL('./src', import.meta.url))
-//     },
-//   },
-// })

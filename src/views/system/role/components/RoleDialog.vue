@@ -193,10 +193,10 @@ const formRules: FormRules = {
     { required: true, message: '请输入角色描述', trigger: 'blur' },
     { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
   ],
-  sort: [
-    { required: true, message: '请输入角色排序', trigger: 'blur' },
-    { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' }
-  ],
+  // sort: [
+  //   { required: true, message: '请输入角色排序', trigger: 'blur' },
+  //   { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' }
+  // ],
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
   ],

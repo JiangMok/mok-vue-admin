@@ -31,7 +31,13 @@ export interface LoginResponse {
   tokenType: string,
   username: string,
   nickname: string,
-  userId: string
+  userId: string,
+  avatar: string
+}
+
+export interface ProfileUserInfo{
+  roleIds :string []
+  user : UserInfo
 }
 
 //用户信息
@@ -131,10 +137,10 @@ export interface UserFormData {
 
 // ================== 新增：用户请求数据类型（提交给后端的）==================
 export interface UserRequestData {
-  id: string
+  id?: string
+  password?: string
+  confirmPassword?: string
   nickname: string
-  password: string
-  confirmPassword: string
   username: string
   phone: string
   email: string
@@ -185,6 +191,7 @@ export interface PermissionItem {
 }
 
 export interface PermissionFormData {
+  id?:string
   permissionName: string
   permissionCode: string
   description: string
@@ -202,7 +209,6 @@ export interface PermissionFormData {
 // ================== 文件管理类型定义 ==================
 export interface FileItem {
   id: string
-  fileId: string
   originalName: string  // 原始文件名
   storageName: string   // 存储文件名
   filePath: string      // 存储路径

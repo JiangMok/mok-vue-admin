@@ -26,7 +26,7 @@
           </div>
         </el-descriptions-item>
 
-        <el-descriptions-item label="文件ID">{{ fileData?.fileId }}</el-descriptions-item>
+        <el-descriptions-item label="文件ID">{{ fileData?.id }}</el-descriptions-item>
         <el-descriptions-item label="文件类型">{{ getFileTypeText(fileData?.fileType) }}</el-descriptions-item>
         <el-descriptions-item label="文件大小">{{ formatFileSize(fileData?.fileSize) }}</el-descriptions-item>
         <el-descriptions-item label="MIME类型">{{ fileData?.mimeType }}</el-descriptions-item>

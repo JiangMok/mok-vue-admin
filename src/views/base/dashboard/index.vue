@@ -326,7 +326,7 @@
     <!-- 页面底部 -->
     <div class="footer">
       <p>最后更新：{{ lastUpdateTime }}</p>
-      <p class="copyright">© 2024 {{ systemInfo.appName || '系统监控' }} - v{{ systemInfo.version || '1.0.0' }}</p>
+      <p class="copyright">© 2025 {{ systemInfo.appName || '系统监控' }} - v{{ systemInfo.version || '1.0.0' }}</p>
     </div>
   </div>
 </template>
@@ -426,8 +426,8 @@ const memoryDetails = computed(() => {
     const match = valueStr.match(/^([\d.]+)\s*([KMGT]?B)$/i)
     if (!match) return 0
 
-    const value = parseFloat(match[1])
-    const unit = match[2].toUpperCase()
+    const value = parseFloat(match[1] || '0')
+    const unit = match[2] || ''.toUpperCase()
 
     switch (unit) {
       case 'B': return value / (1024 * 1024)

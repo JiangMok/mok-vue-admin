@@ -221,11 +221,14 @@ const fetchRolePermission = async (roleId: string) => {
 const handleClose = () => {
   dialogVisible.value = false
   // 重置数据
-  Object.keys(detailData).forEach(key => {
-    if (key !== 'id') {
-      detailData[key] = ''
-    }
-  })
+    const data = detailData as any // 临时转为 any
+    Object.keys(data).forEach(key => {
+      if (typeof data[key] === 'string') {
+        data[key] = ''
+      } else if (typeof data[key] === 'number') {
+        data[key] = 0
+      }
+    })
   detailData.id = ''
   detailData.sort = 1
   detailData.status = 1

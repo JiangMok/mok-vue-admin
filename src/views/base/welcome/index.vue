@@ -69,7 +69,6 @@ import {
   HomeFilled,
   UserFilled,
   Lock,
-  Setting,
   User,
   Bell
 } from '@element-plus/icons-vue'
@@ -131,7 +130,7 @@ const quickLinks = [
 
 // 获取用户名称
 const userName = computed(() => {
-  return userStore.nickname || userStore.username || '尊敬的访客'
+  return userStore.nickname || userStore.userInfo?.username || '尊敬的访客'
 })
 
 // 更新时间函数

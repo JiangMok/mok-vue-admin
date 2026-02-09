@@ -16,13 +16,14 @@ export const useUserStore = defineStore('user', {
   getters: {
     isLoggedIn: (state) => !!state.token,
     nickname: (state) => state.userInfo?.nickname || '',
-    userId: (state) => state.userInfo?.id || ''
+    userId: (state) => state.userInfo?.id || '',
+    avatar: (state) => state.userInfo?.avatar || ''
   },
 
   actions: {
     // 设置菜单
     setMenus(menus: MenuItem[]) {
-      console.log('开始设置菜单:', menus)
+      // console.log('开始设置菜单:', menus)
 
       // 对菜单进行排序
       const sortMenus = (menuList: MenuItem[]): MenuItem[] => {
@@ -37,7 +38,7 @@ export const useUserStore = defineStore('user', {
       }
 
       this.menus = sortMenus(menus)
-      console.log('排序后的菜单:', this.menus)
+      // console.log('排序后的菜单:', this.menus)
 
       // 提取菜单权限（code字段）
       this.extractMenuPermissions(menus)
@@ -45,7 +46,7 @@ export const useUserStore = defineStore('user', {
 
     // 设置API权限
     setApiPermissions(permissions: ApiPermission[]) {
-      console.log('设置API权限:', permissions)
+      // console.log('设置API权限:', permissions)
       this.apiPermissions = permissions
 
       // 提取API权限
@@ -71,7 +72,7 @@ export const useUserStore = defineStore('user', {
       }
 
       extract(menus)
-      console.log('菜单权限:', menuCodes)
+      // console.log('菜单权限:', menuCodes)
 
       // 合并权限
       this.mergePermissions(menuCodes, this.permissions.filter(p => !p.startsWith('menu:')))
@@ -83,7 +84,7 @@ export const useUserStore = defineStore('user', {
         .filter(p => p.permissionCode && p.status === 1)  // 只提取启用状态的权限
         .map(p => p.permissionCode)
 
-      console.log('API权限:', apiCodes)
+      // console.log('API权限:', apiCodes)
 
       // 合并权限
       this.mergePermissions(this.permissions.filter(p => p.startsWith('menu:')), apiCodes)
@@ -97,7 +98,7 @@ export const useUserStore = defineStore('user', {
 
       // 合并并去重
       this.permissions = [...new Set([...menuPerms, ...apiPerms])]
-      console.log('合并后的所有权限:', this.permissions)
+      // console.log('合并后的所有权限:', this.permissions)
     },
 
     // 检查是否有权限（简化版，兼容现有代码）
@@ -139,7 +140,7 @@ export const useUserStore = defineStore('user', {
         nickname: data.nickname,
         phone: '',
         email: '',
-        avatar: null,
+        avatar: data.avatar || null,
         status: 1,
         createTime: new Date().toISOString(),
         updateTime: new Date().toISOString()
@@ -148,7 +149,8 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('userInfo', JSON.stringify({
         id: data.userId,
         username: data.username,
-        nickname: data.nickname
+        nickname: data.nickname,
+        avatar: data.avatar
       }))
 
       // 登录后获取API权限
@@ -170,6 +172,12 @@ export const useUserStore = defineStore('user', {
     // 其他方法保持不变...
     setUserInfo(info: UserInfo | null) {
       this.userInfo = info
+      localStorage.setItem('userInfo', JSON.stringify({
+        id: info?.id,
+        username: info?.username,
+        nickname: info?.nickname,
+        avatar: info?.avatar
+      }))
     },
 
     setToken(token: string) {
@@ -207,7 +215,6 @@ export const useUserStore = defineStore('user', {
       const token = localStorage.getItem('token')
       const refreshToken = localStorage.getItem('refreshToken')
       const userInfoStr = localStorage.getItem('userInfo')
-
       if (token) {
         this.token = token
       }

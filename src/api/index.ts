@@ -7,7 +7,7 @@ import type {
   LoginResponse,
   MenuItem,
   OperationLog,
-  PageResponse,
+  PageResponse, PermissionItem, ProfileUserInfo,
   RoleItem,
   UserInfo
 } from '@/types'
@@ -51,7 +51,7 @@ export const userApi = {
   }): Promise<ApiResponse<PageResponse<UserInfo>>> => {
     return request.post('/user/page', params)
   },
-  getUserById: (id: string): Promise<ApiResponse<UserInfo>> => {
+  getUserById: (id: string): Promise<ApiResponse<ProfileUserInfo>> => {
     return request.get(`/user/${id}`)
   },
 
@@ -95,7 +95,7 @@ export const permissionApi = {
     pageNum: number
     pageSize: number
     roleName?: string
-  }): Promise<ApiResponse<PageResponse<RoleItem>>> => {
+  }): Promise<ApiResponse<PageResponse<PermissionItem>>> => {
     return request.post('/permission/page', params)
   },
   // 获取用户API权限列表
@@ -105,7 +105,7 @@ export const permissionApi = {
   getByRoleId: (roleId: string): Promise<ApiResponse<ApiPermission[]>> => {
     return request.get(`/permission/getByRoleId/${roleId}`)
   },
-  getByUserId: (): Promise<ApiResponse<ApiPermission[]>> => {
+  getByUserId: (): Promise<ApiResponse<PermissionItem[]>> => {
     return request.get('/permission/getByUserId')
   },
   delete: (id: string) => {
@@ -255,15 +255,15 @@ export const fileApi = {
   },
 
   // 下载文件 - GET请求，返回blob
-  download: (fileId: string): Promise<Blob> => {
-    return request.get(`/files/download/${fileId}`, {
+  download: (id: string): Promise<Blob> => {
+    return request.get(`/files/download/${id}`, {
       responseType: 'blob'
     })
   },
 
   // 更新下载次数 - PUT请求
-  updateDownloadCount: (fileId: string): Promise<ApiResponse> => {
-    return request.put(`/files/updateDownloadCount/${fileId}`)
+  updateDownloadCount: (id: string): Promise<ApiResponse> => {
+    return request.put(`/files/updateDownloadCount/${id}`)
   }
 }
 

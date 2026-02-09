@@ -163,7 +163,7 @@ const dialogVisible = computed({
 
 // ================== 监听对话框显示 ==================
 watch(() => props.visible, (newVal) => {
-  console.log("++++++++++++++++++++++++++  watch(() => props.visible, ",props.visible)
+  // console.log("++++++++++++++++++++++++++  watch(() => props.visible, ",props.visible)
   if (newVal) {
     initData()
   }
@@ -171,16 +171,16 @@ watch(() => props.visible, (newVal) => {
 
 // ================== 监听ID变化 ==================
 watch(() => props.operationLogId, (newVal) => {
-  console.log("++++++++++++++++++++++++++  watch(() => props.operationLogId, ",props.operationLogId)
+  // console.log("++++++++++++++++++++++++++  watch(() => props.operationLogId, ",props.operationLogId)
   if (newVal && props.visible) {
     initData()
   }
 })
 // ================== 初始化数据 ==================
 const initData = async () => {
-  console.log("++++++++++++++++++++++++++  初始化数据 ")
-  console.log("props.visible:",props.visible)
-  console.log("props.operationLogId:",props.operationLogId)
+  // console.log("++++++++++++++++++++++++++  初始化数据 ")
+  // console.log("props.visible:",props.visible)
+  // console.log("props.operationLogId:",props.operationLogId)
   if (props.visible && props.operationLogId) {
     // 并行获取详情
     await Promise.all([
@@ -192,9 +192,9 @@ const initData = async () => {
 const fetchDetail = async () => {
   // 如果有传入的数据，直接使用
   if (props.operationLogData) {
-    console.log("++++++++++++++++++++++++++")
-    console.log(operationLogInfo)
-    console.log("++++++++++++++++++++++++++")
+    // console.log("++++++++++++++++++++++++++")
+    // console.log(operationLogInfo)
+    // console.log("++++++++++++++++++++++++++")
     operationLogInfo.value = props.operationLogData
   } else if (props.operationLogId) {
     // 否则根据用户ID获取详情
@@ -203,9 +203,9 @@ const fetchDetail = async () => {
       const res = await operationLogApi.getOperationLogById(props.operationLogId)
       if (res.code === 200) {
         operationLogInfo.value = res.data
-        console.log("=========================")
-        console.log(operationLogInfo)
-        console.log("==========================")
+        // console.log("=========================")
+        // console.log(operationLogInfo)
+        // console.log("==========================")
       } else {
         ElMessage.error(res.msg || '获取用户详情失败1')
       }

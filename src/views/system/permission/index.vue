@@ -241,9 +241,10 @@ const fetchList = async () => {
     }
 
     // 清除空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined) {
-        delete params[key]
+    const cleanParams: Record<string, any> = { ...params }
+    Object.keys(cleanParams).forEach(key => {
+      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
+        delete cleanParams[key]
       }
     })
 

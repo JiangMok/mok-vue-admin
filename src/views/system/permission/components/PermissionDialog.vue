@@ -344,11 +344,11 @@ const fetchPermissionList = async () => {
     // TODO: 可能需要调用不同的接口获取所有权限（非树形结构）
     // 假设这里调用的是获取所有权限列表的接口
     const res = await permissionApi.getByUserId()
-    console.log('所有权限列表:', res)
+    // console.log('所有权限列表:', res)
 
     // 根据实际接口响应结构调整
     // 假设返回的是 data.data 数组
-    const allPermissions = res.data?.data || res.data || []
+    const allPermissions = res.data || []
 
     // 过滤掉当前正在编辑的权限（如果是编辑模式）
     if (props.isEdit && props.editData) {

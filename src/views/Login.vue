@@ -124,12 +124,16 @@ const loginRules: FormRules = {
 const refreshCaptcha = async () => {
   try {
     const res = await captchaApi.getCaptcha();
-    console.log('验证码接口返回:', res);
+    if(res.code != 200 ){
+      ElMessage.error('验证码获取失败:'+res.msg)
+      return
+    }
+    // console.log('验证码接口返回:', res);
     captchaImage.value = res.data.image
     loginForm.captchaKey = res.data.key
   } catch (e) {
-    console.error('验证码获取失败', e)
-    ElMessage.error('验证码获取失败')
+    // console.error('验证码获取失败', e)
+    // ElMessage.error('验证码获取失败')
   }
 }
 /**
@@ -150,11 +154,11 @@ const handleLogin = async () => {
   //设置等待效果
   loading.value = true
   try {
-    console.log("开始登录,参数:", loginForm)
+    // console.log("开始登录,参数:", loginForm)
     //调用登录api
     const res = await authApi.login(loginForm)
     //控制台输出登录响应
-    console.log('登录响应:', res)
+    // console.log('登录响应:', res)
     //检查是否登录成功
     if (res.code === 200 && res.success && !res.error) {
       //登陆成功,调用store的afterLogin方法
@@ -191,16 +195,16 @@ const handleLogin = async () => {
       refreshCaptcha()
     }
   } catch (e: any) {
-    // 捕获登录过程中的所有错误
-    console.error('登录错误:', e)
-    // 显示错误信息
-    let errorMsg = '登录失败'
-    if (e.message?.includes('Network Error')) {
-      errorMsg = '网络错误，请检查后端服务'
-    } else if (e.msg) {
-      errorMsg = e.msg
-    }
-    ElMessage.error("catch:"+errorMsg)
+    // // 捕获登录过程中的所有错误
+    // console.error('登录错误:', e)
+    // // 显示错误信息
+    // let errorMsg = '登录失败'
+    // if (e.message?.includes('Network Error')) {
+    //   errorMsg = '网络错误，请检查后端服务'
+    // } else if (e.msg) {
+    //   errorMsg = e.msg
+    // }
+    // ElMessage.error("catch:"+errorMsg)
     // 刷新验证码
     refreshCaptcha()
     // 清空验证码输入框

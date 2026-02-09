@@ -288,7 +288,7 @@
             </el-icon>
             <p class="no-preview-text">该文件类型暂不支持在线预览</p>
             <p>文件名：{{ currentFile?.originalName }}</p>
-            <p>文件大小：{{ formatFileSize(currentFile?.fileSize) }}</p>
+            <p>文件大小：{{ formatFileSize(currentFile?.fileSize || 0) }}</p>
             <p>文件类型：{{ currentFile?.mimeType }}</p>
           </div>
         </div>
@@ -370,13 +370,13 @@ const fetchList = async () => {
     const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      keyword: !(!searchForm.keyword && !undefined),
       ...searchForm
     }
     // 清除空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined || params[key] === null) {
-        delete params[key]
+    const cleanParams: Record<string, any> = { ...params }
+    Object.keys(cleanParams).forEach(key => {
+      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
+        delete cleanParams[key]
       }
     })
 
@@ -453,7 +453,13 @@ const handleFileSelect = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
     const file = input.files[0]
-    validateAndSetFile(file)
+    // 确保文件存在
+    if (file) {
+      validateAndSetFile(file)
+    } else {
+      // 处理文件不存在的情况
+      ElMessage.warning('请选择文件')
+    }
     // 清空input值，允许重复选择相同文件
     input.value = ''
   }
@@ -508,7 +514,13 @@ const handleDrop = (event: DragEvent) => {
 
   if (event.dataTransfer?.files.length) {
     const file = event.dataTransfer.files[0]
-    validateAndSetFile(file)
+    // 确保文件存在
+    if (file) {
+      validateAndSetFile(file)
+    } else {
+      // 处理文件不存在的情况
+      ElMessage.warning('请选择文件')
+    }
   }
 }
 
@@ -579,7 +591,7 @@ const handleDownload = async (row: FileItem | null) => {
     document.body.removeChild(link)
 
     // 如果需要，可以调用后端API更新下载次数
-    await fileApi.updateDownloadCount(row.fileId)
+    await fileApi.updateDownloadCount(row.id)
 
     // 刷新列表
     fetchList()
@@ -602,10 +614,7 @@ const handleDelete = async (row: FileItem) => {
         type: 'warning'
       }
     )
-console.log("+++++++++++++++++++++++++++++++++++++")
-    console.log(row.fileId)
-console.log("+++++++++++++++++++++++++++++++++++++")
-    await fileApi.deleteFile(row.fileId)
+    await fileApi.deleteFile(row.id)
     ElMessage.success('删除成功')
     fetchList()
 

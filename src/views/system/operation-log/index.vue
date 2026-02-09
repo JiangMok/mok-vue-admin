@@ -149,7 +149,7 @@
     <OperationLogDetail
       v-model:visible="detailDialogVisible"
       :operationLogId="selectedOperationLogId"
-      :operation-log-data="operationLogData"
+      :operation-log-data="operationLogData || undefined"
     />
   </div>
 
@@ -246,19 +246,20 @@ const fetchList = async () => {
     }
 
     // 清除空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined) {
-        delete params[key]
+    const cleanParams: Record<string, any> = { ...params }
+    Object.keys(cleanParams).forEach(key => {
+      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
+        delete cleanParams[key]
       }
     })
 
     const res = await operationLogApi.getPage(params)
-    console.log('用户列表响应:', res)
+    // console.log('用户列表响应:', res)
     //将返回的数据传给页面列表
     operationLogList.value = res.data.data || []
     pagination.total = res.data.total || 0
   } catch (error) {
-    console.error('获取操作日志列表失败:', error)
+    // console.error('获取操作日志列表失败:', error)
     ElMessage.error('获取列表失败')
   } finally {
     loading.value = false
@@ -333,7 +334,7 @@ const handlePageChange = (page: number) => {
 }
 //=================页面加载时的操作(生命周期钩子)============================================
 onMounted(() => {
-  console.log('操作日志页面加载')
+  // console.log('操作日志页面加载')
   fetchList()
 })
 //===========================分页---结束==============================

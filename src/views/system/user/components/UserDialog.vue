@@ -179,7 +179,8 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import { Plus } from '@element-plus/icons-vue'
 import type { RoleItem, UserFormData, UserRequestData } from '@/types'
 import { roleApi, userApi } from '@/api'
-
+import {useUserStore} from "@/stores/user.ts";
+const userStore = useUserStore()
 // ================== 新增：定义组件属性和事件 ==================
 interface Props {
   visible: boolean
@@ -225,7 +226,7 @@ const submitLoading = ref(false)
 
 // 头像上传相关
 const avatarUrl = ref('')
-const uploadUrl = ref('http://localhost:8080/api/upload/avatar')
+const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL+'/files/uploadAvatar')
 const uploadHeaders = ref({})
 
 // ================== 新增：计算属性 ==================
@@ -426,7 +427,7 @@ const removeRole = (roleId: string) => {
 const handleAvatarSuccess = (response: any) => {
   console.log('头像上传响应:', response)
   if (response.code === 200) {
-    formData.avatar = response.data.url || response.data.imageUrl || response.data.avatar || ''
+    formData.avatar = response.data.fileUrl || ''
     avatarUrl.value = formData.avatar
     ElMessage.success('头像上传成功')
   } else {
@@ -502,6 +503,17 @@ const handleSubmit = async () => {
     if (props.isEdit && props.editData) {
       // 编辑用户
       await userApi.updateUser({ id: props.editData.id, ...submitData })
+      userStore.setUserInfo({
+        createTime: "",
+        id: props.editData.id,
+        updateTime: "",
+        status: submitData.status,
+        username: submitData.username,
+        nickname: submitData.nickname,
+        phone: submitData.phone,
+        email: submitData.email,
+        avatar: submitData.avatar
+      })
       ElMessage.success('用户更新成功')
     } else {
       // 新增用户
