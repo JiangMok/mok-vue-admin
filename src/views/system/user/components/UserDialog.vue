@@ -92,7 +92,11 @@
             :headers="uploadHeaders"
             accept=".jpg,.jpeg,.png,.gif"
           >
-            <img v-if="avatarUrl" :src="avatarUrl" class="avatar" />
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              class="avatar"
+              @error="handleImageError"/>
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
           <div class="avatar-tips">
@@ -323,7 +327,7 @@ const formRules: FormRules = {
 // ================== 新增：初始化表单数据（编辑时）==================
 const initFormData = async () => {
   if (props.isEdit && props.editData) {
-    console.log('编辑用户数据:', props.editData)
+    // console.log('编辑用户数据:', props.editData)
 
     // 填充表单数据
     formData.username = props.editData.username || ''
@@ -350,7 +354,7 @@ const initFormData = async () => {
 // ================== 新增：获取用户角色信息 ==================
 const fetchUserRoles = async (userId: string) => {
   try {
-    console.log('正在获取用户角色，用户ID:', userId)
+    // console.log('正在获取用户角色，用户ID:', userId)
 
     // 调用获取用户角色的API
     const res = await roleApi.getUserRoles(userId)
@@ -358,20 +362,26 @@ const fetchUserRoles = async (userId: string) => {
     if (res.code === 200 && res.data) {
       // 将角色ID提取到 formData.roleIds
       const roleIds = res.data.map(role => role.id)
-      console.log('获取到的用户角色ID:', roleIds)
+      // console.log('获取到的用户角色ID:', roleIds)
 
       formData.roleIds = roleIds
     } else {
-      console.warn('获取用户角色失败或没有角色:', res.msg)
+      // console.warn('获取用户角色失败或没有角色:', res.msg)
       formData.roleIds = []
     }
   } catch (error) {
-    console.error('获取用户角色失败:', error)
+    // console.error('获取用户角色失败:', error)
     ElMessage.error('获取用户角色失败')
     formData.roleIds = []
   }
 }
-
+const handleImageError = () => {
+  // console.warn('头像加载失败，可能文件已被删除');
+  avatarUrl.value = '';           // 清空显示，回退到上传图标
+  formData.avatar = '';           // 清空表单中的头像字段
+  // 可选：提示用户原头像已丢失，请重新上传
+  ElMessage.warning('原头像文件不存在，请重新上传');
+};
 // ================== 新增：重置表单 ==================
 const resetForm = () => {
   if (formRef.value) {
@@ -396,13 +406,13 @@ const fetchRoleList = async () => {
   roleLoading.value = true
   try {
     const res = await roleApi.getAllRoles()
-    console.log('角色列表接口返回:', res)
+    // console.log('角色列表接口返回:', res)
 
     // 处理角色数据
     roleList.value = res.data || []
 
   } catch (error) {
-    console.error('获取角色列表失败:', error)
+    // console.error('获取角色列表失败:', error)
     ElMessage.error('获取角色列表失败')
   } finally {
     roleLoading.value = false
@@ -425,7 +435,7 @@ const removeRole = (roleId: string) => {
 
 // ================== 新增：头像上传处理 ==================
 const handleAvatarSuccess = (response: any) => {
-  console.log('头像上传响应:', response)
+  // console.log('头像上传响应:', response)
   if (response.code === 200) {
     formData.avatar = response.data.fileUrl || ''
     avatarUrl.value = formData.avatar
@@ -497,7 +507,7 @@ const handleSubmit = async () => {
       submitData.password = formData.password
     }
 
-    console.log('提交数据:', JSON.stringify(submitData, null, 2))
+    // console.log('提交数据:', JSON.stringify(submitData, null, 2))
 
     // 调用API
     if (props.isEdit && props.editData) {
@@ -529,7 +539,7 @@ const handleSubmit = async () => {
     resetForm()
 
   } catch (error: any) {
-    console.error('表单提交错误:', error)
+    // console.error('表单提交错误:', error)
     if (error.fields) {
       // 表单验证失败
       ElMessage.error('请正确填写表单信息')

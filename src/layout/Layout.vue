@@ -108,6 +108,10 @@ const nickname = computed(() => {
   return userStore.nickname || '用户'
 })
 
+const username = computed(() => {
+  return userStore.nickname || '用户'
+})
+
 const avatar = computed(() => {
   return userStore.avatar
 })

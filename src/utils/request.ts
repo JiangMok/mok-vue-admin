@@ -65,9 +65,9 @@ service.interceptors.response.use(
     //如果有业务错误码(不是200),统一处理
     if (data.code !== undefined && data.code !== 200) {
       // console.error("响应拦截器:" + data.msg || '请求失败')
-      ElMessage.error(data.msg)
+      // ElMessage.error(data.msg)
       //将错误信息返回给调用方
-      return Promise.reject(data)
+      // return Promise.reject(data)
     }
     //返回响应数据(业务部分),而不是完整的响应对象
     return response.data
@@ -110,7 +110,7 @@ service.interceptors.response.use(
         // 这里调用刷新token的接口（你的后端需要提供）
         // 假设刷新接口是 /auth/refresh，用refreshToken获取新token
         const refreshResponse = await axios.post(
-          baseURL+`/api/auth/refresh?refreshToken=${ refreshToken }`,
+          baseURL+`/auth/refresh?refreshToken=${ refreshToken }`,
         )
         // 如果有刷新接口，可以这样处理：
         const newToken = refreshResponse.data.data.token

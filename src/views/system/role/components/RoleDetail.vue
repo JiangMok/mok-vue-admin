@@ -187,7 +187,7 @@ const initDetailData = async () => {
     // 如果只有ID，需要根据ID获取详情
     // 注意：这里假设有根据ID获取角色详情的API
     // 由于列表页面已经传递了tableData，这里主要作为备用
-    console.warn('需要通过ID获取角色详情，但当前缺少相关API')
+    // console.warn('需要通过ID获取角色详情，但当前缺少相关API')
     await fetchRolePermission(props.tableId)
   }
 }
@@ -202,11 +202,11 @@ const fetchRolePermission = async (roleId: string) => {
     if (res.code === 200 && res.data) {
       permissionList.value = res.data
     } else {
-      console.warn('获取角色权限失败:', res.msg)
+      // console.warn('获取角色权限失败:', res.msg)
       permissionList.value = []
     }
   } catch (error) {
-    console.error('获取角色权限失败:', error)
+    // console.error('获取角色权限失败:', error)
     ElMessage.error('获取角色权限失败')
     permissionList.value = []
   } finally {

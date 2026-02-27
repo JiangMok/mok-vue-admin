@@ -61,14 +61,14 @@
         </el-form-item>
       </el-form>
 
-      <div class="login-footer">
-        <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-        <el-link type="primary" underline="hover">忘记密码？</el-link>
-      </div>
+<!--      <div class="login-footer">-->
+<!--        <el-checkbox v-model="rememberMe">记住我</el-checkbox>-->
+<!--        <el-link type="primary" underline="hover">忘记密码？</el-link>-->
+<!--      </div>-->
     </div>
 
     <div class="copyright">
-      © 2024 后台管理系统
+      © 2025 后台管理系统
     </div>
   </div>
 </template>

@@ -220,14 +220,14 @@ const fetchUserList = async () => {
         delete cleanParams[key]
       }
     })
-    console.log('请求用户列表参数:', params)
+    // console.log('请求用户列表参数:', params)
     const res = await userApi.getUsers(params)
-    console.log('用户列表响应:', res)
+    // console.log('用户列表响应:', res)
     // 注意：你的接口返回是嵌套的data
     userList.value = res.data.data || []
     pagination.total = res.data.total || 0
   } catch (error) {
-    console.error('获取用户列表失败:', error)
+    // console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
@@ -382,7 +382,7 @@ const handleDialogSuccess = () => {
 
 //=================页面加载时的操作(生命周期钩子)============================================
 onMounted(() => {
-  console.log('用户管理页面加载')
+  // console.log('用户管理页面加载')
   fetchUserList()
 })
 </script>

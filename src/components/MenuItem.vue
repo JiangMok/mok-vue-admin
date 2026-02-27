@@ -61,7 +61,7 @@ const resolvePath = (routePath: string) => {
 // 处理菜单点击
 const handleClick = () => {
   const path = resolvePath(props.menu.path)
-  console.log(`点击菜单 ${props.menu.name}, 跳转到 ${path}`)
+  // console.log(`点击菜单 ${props.menu.name}, 跳转到 ${path}`)
   router.push(path)
 }
 </script>

@@ -24,7 +24,7 @@
           />
         </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="searchForm.params.type" placeholder="请选择类型" clearable>
+          <el-select v-model="searchForm.params.type" placeholder="请选择类型" clearable style="width: 200px">
             <el-option label="目录" :value="1" />
 <!--            <el-option label="菜单" :value="2" />-->
             <el-option label="按钮" :value="3" />
@@ -249,16 +249,12 @@ const fetchList = async () => {
     })
 
     const res = await permissionApi.getPage(params)
-    console.log('权限列表响应:', res)
-
-    // TODO: 根据实际接口响应结构调整
-    // 接口返回嵌套结构：res.data.data 才是真正的列表数据
-    // res.data.total 是总数
+    // console.log('权限列表响应:', res)
     tableList.value = res.data?.data || []
     pagination.total = res.data?.total || 0
 
   } catch (error) {
-    console.error('获取权限列表失败:', error)
+    // console.error('获取权限列表失败:', error)
     ElMessage.error('获取权限列表失败')
   } finally {
     loading.value = false
@@ -378,7 +374,7 @@ const formatDate = (dateString: string) => {
       second: '2-digit'
     })
   } catch (error) {
-    console.log('日期格式化失败:', error)
+    // console.log('日期格式化失败:', error)
     return dateString
   }
 }

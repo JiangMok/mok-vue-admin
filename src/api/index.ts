@@ -2,12 +2,21 @@ import request from "@/utils/request.ts";
 import type {
   ApiPermission,
   ApiResponse,
-  CaptchaResponse, FileItem, FileUploadResponse,
+  CaptchaResponse,
+  CouponFormData,
+  CouponItem,
+  DeliveryOrderEntity,
+  FileItem,
+  FileUploadResponse,
   LoginParams,
   LoginResponse,
   MenuItem,
   OperationLog,
-  PageResponse, PermissionItem, ProfileUserInfo,
+  OrderInfoEntity,
+  PageResponse,
+  PermissionItem,
+  ProductItem,
+  ProfileUserInfo,
   RoleItem,
   UserInfo
 } from '@/types'
@@ -220,7 +229,7 @@ export const fileApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
-    params:{
+    params: {
       keyword?: string
       fileType?: string
       uploadUserId?: string
@@ -242,7 +251,7 @@ export const fileApi = {
 
   // 批量删除文件 - DELETE请求
   batchDelete: (ids: string[]): Promise<ApiResponse> => {
-    return request.delete('/files/batchDelete', { data: { ids } })
+    return request.delete('/files/batchDelete', {data: {ids}})
   },
 
   // 上传文件 - POST请求，FormData格式
@@ -267,3 +276,126 @@ export const fileApi = {
   }
 }
 
+/**
+ * 用户管理API
+ */
+export const productApi = {
+  // 获取列表（分页）
+  getPage: (params: {
+    pageNum: number
+    pageSize: number
+  }): Promise<ApiResponse<PageResponse<ProductItem>>> => {
+    return request.post('/product/list', params)
+  },
+  getById: (id: string): Promise<ApiResponse<ProductItem>> => {
+    return request.get(`/product/${id}`)
+  },
+  // 添加
+  add: (data: Partial<ProductItem>) => {
+    return request.post('/product/add', data)
+  },
+
+  // 更新
+  update: (data: Partial<ProductItem>) => {
+    return request.post('/product/update', data)
+  },
+  // 删除
+  delete: (id: string) => {
+    return request.delete(`/product/delete/${id}`)
+  },
+  // 设置秒杀信息
+  setSeckill: (data: Partial<ProductItem>) => {
+    return request.post('/product/setSeckill', data)
+  },
+  // 清除秒杀信息
+  clearSeckill: (id: string) => {
+    return request.post(`/product/clearSeckill/${id}`)
+  },
+  getCoupons: (productId: string): Promise<ApiResponse<CouponItem>> => {
+    return request.get(`/coupon/getCoupons/${productId}`)
+  }
+}
+
+
+export const couponApi = {
+  // 分页查询
+  getPage: (params: {
+    pageNum: number
+    pageSize: number
+  }): Promise<ApiResponse<PageResponse<ProductItem>>> => {
+    return request.post('/coupon/list', params)
+  },
+  // 新增
+  add(data: CouponFormData) {
+    return request.post('/coupon/add', data)
+  },
+  // 修改
+  update(data: CouponFormData) {
+    return request.post('/coupon/update', data)
+  },
+  // 删除
+  delete(id: string) {
+    return request.delete(`/coupon/delete/${id}`)
+  },
+  saveProductCoupons: (params: {
+    productId: string
+    couponIds: string[]
+  }): Promise<ApiResponse> => {
+    return request.post('/coupon/saveProductCoupons', params)
+  }
+}
+
+export const orderApi = {
+  getList: (params: {
+    pageNum: number
+    pageSize: number
+  }): Promise<ApiResponse<PageResponse<OrderInfoEntity>>> => {
+    return request.post('/order/list', params)
+  },
+  payOrder(params: {
+    orderNo: string
+    payType: number
+  }){
+    return request.post('/order/pay', params)
+  }
+}
+
+export const seckillApi = {
+  seckillOrder: (
+    productId: string,
+    quantity: number,
+    verifyCode: string
+  ): Promise<ApiResponse> => {
+    return request.post(`/seckill/order?productId=${productId}&quantity=${quantity}&verifyCode=${verifyCode}`)
+  },
+  getSeckillVerifyCode: (
+    productId: string
+  ): Promise<ApiResponse> => {
+    return request.get(`/seckill/verify/code?productId=${productId}`)
+  },
+  initSeckillStock: (): Promise<ApiResponse> => {
+    return request.post('/seckill/init/stock')
+  }
+}
+
+export const deliveryApi = {
+  // 分页查询
+  getPage: (params: {
+    pageNum: number
+    pageSize: number
+  }): Promise<ApiResponse<PageResponse<DeliveryOrderEntity>>> => {
+    return request.post('/delivery/admin/list', params)
+  },
+  // 发货
+  shipDelivery:(
+    deliveryId: string,
+    deliveryCompany: string,
+    deliveryNumber: string
+  ): Promise<ApiResponse> =>  {
+    return request.post(`/delivery/ship?deliveryId=${deliveryId}&deliveryCompany=${deliveryCompany}&deliveryNumber=${deliveryNumber}`)
+  },
+  // 确认收货
+  receiveDelivery(id: string):Promise<ApiResponse> {
+    return request.post(`/delivery/receive/${id}`)
+  }
+}

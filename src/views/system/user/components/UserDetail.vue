@@ -180,7 +180,7 @@ const fetchUserDetail = async () => {
         ElMessage.error(res.msg || '获取用户详情失败')
       }
     } catch (error) {
-      console.error('获取用户详情失败:', error)
+      // console.error('获取用户详情失败:', error)
       ElMessage.error('获取用户详情失败')
     } finally {
       loading.value = false
@@ -201,7 +201,7 @@ const fetchUserRoles = async () => {
       ElMessage.error(res.msg || '获取用户角色失败')
     }
   } catch (error) {
-    console.error('获取用户角色失败:', error)
+    // console.error('获取用户角色失败:', error)
     ElMessage.error('获取用户角色失败')
   } finally {
     loading.value = false

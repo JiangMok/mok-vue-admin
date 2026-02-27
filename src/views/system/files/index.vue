@@ -97,11 +97,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="fileType" label="类型" width="100">
+        <el-table-column prop="fileType" label="文件类型" width="100">
           <template #default="{ row }">
             <el-tag :type="getFileTypeTagType(row.fileType)">
               {{ getFileTypeText(row.fileType) }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="businessType" label="业务类型" width="100">
+          <template #default="{ row }">
+<!--            <el-tag :type="getBusinessType(row.businessType)">-->
+              {{ formatBusinessType(row.businessType) }}
+<!--            </el-tag>-->
           </template>
         </el-table-column>
 
@@ -124,15 +131,6 @@
             </el-tag>
           </template>
         </el-table-column>
-
-        <el-table-column prop="status" label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '正常' : '已删除' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
         <el-table-column prop="createTime" label="创建时间" width="160">
           <template #default="{ row }">
             {{ formatDate(row.createTime) }}
@@ -233,7 +231,7 @@
             <el-form-item label="业务类型">
               <el-select v-model="uploadForm.businessType" placeholder="请选择业务类型" clearable>
                 <el-option label="通用文件" value="general" />
-                <el-option label="用户头像" value="avatar" />
+                <el-option label="用户头像" value="1" />
                 <el-option label="产品图片" value="product" />
                 <el-option label="合同文档" value="contract" />
               </el-select>
@@ -381,14 +379,12 @@ const fetchList = async () => {
     })
 
     const res = await fileApi.getPage(params)
-    console.log('文件列表响应:', res)
-
-    // TODO: 根据实际接口响应结构调整
+    // console.log('文件列表响应:', res)
     tableList.value = res.data?.data || []
     pagination.total = res.data?.total || 0
 
   } catch (error) {
-    console.error('获取文件列表失败:', error)
+    // console.error('获取文件列表失败:', error)
     ElMessage.error('获取文件列表失败')
   } finally {
     loading.value = false
@@ -549,7 +545,7 @@ const handleUploadSubmit = async () => {
 
     // 调用上传API
     const res = await fileApi.upload(formData)
-    console.log('上传响应:', res)
+    // console.log('上传响应:', res)
 
     if (res.code === 200) {
       ElMessage.success('文件上传成功')
@@ -559,7 +555,7 @@ const handleUploadSubmit = async () => {
       ElMessage.error(res.msg || '上传失败')
     }
   } catch (error) {
-    console.error('上传失败:', error)
+    // console.error('上传失败:', error)
     ElMessage.error('文件上传失败')
   } finally {
     uploading.value = false
@@ -572,7 +568,7 @@ const handlePreview = (row: FileItem) => {
 
   // 不再硬编码 localhost:8080，直接使用 row.fileUrl
   // 假设后端已返回完整的文件URL
-  console.log('预览文件URL:', row.fileUrl)
+  // console.log('预览文件URL:', row.fileUrl)
   previewDialogVisible.value = true
 }
 
@@ -597,7 +593,7 @@ const handleDownload = async (row: FileItem | null) => {
     fetchList()
 
   } catch (error) {
-    console.error('下载失败:', error)
+    // console.error('下载失败:', error)
     ElMessage.error('下载失败')
   }
 }
@@ -715,7 +711,7 @@ const formatDate = (dateString: string) => {
       second: '2-digit'
     })
   } catch (error) {
-    console.log('日期格式化失败:', error)
+    // console.log('日期格式化失败:', error)
     return dateString
   }
 }
@@ -731,6 +727,22 @@ const truncateText = (text: string, maxLength: number) => {
 onMounted(() => {
   fetchList()
 })
+
+const formatBusinessType = (type: number) => {
+  const typeMap: Record<number, string> = {
+    0: '其他',
+    1: '用户头像',
+    2: '文件管理上传'
+  }
+  return typeMap[type] || '未知'
+}
+const getBusinessType = (type: number) => {
+  const typeMap: Record<number, string> = {
+    0: 'info',
+    1: 'primary'
+  }
+  return typeMap[type] || 'info'
+}
 </script>
 
 <style scoped>

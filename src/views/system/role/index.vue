@@ -1,7 +1,7 @@
 <template>
   <div class="user-manage">
     <div class="page-header">
-      <h2>操作日志</h2>
+      <h2>角色管理</h2>
       <div class="header-actions">
         <el-button type="primary" @click="handleAdd"
                    v-if="userStore.hasPermission('system:user:add')">
@@ -208,12 +208,12 @@ const fetchList = async () => {
       }
     })
     const res = await roleApi.getPage(params)
-    console.log('列表响应:', res)
+    // console.log('列表响应:', res)
     //将返回的数据传给页面列表
     tableList.value = res.data.data || []
     pagination.total = res.data.total || 0
   } catch (error) {
-    console.error('获取列表失败:', error)
+    // console.error('获取列表失败:', error)
     ElMessage.error('获取列表失败')
   } finally {
     loading.value = false
@@ -328,7 +328,7 @@ const formatDate = (dateString: string) => {
       second: '2-digit'
     })
   } catch (error) {
-    console.log("日期格式化失败:", error)
+    // console.log("日期格式化失败:", error)
     return dateString
   }
 }

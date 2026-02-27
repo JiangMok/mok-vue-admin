@@ -364,7 +364,7 @@ const cleanBefore = async () => {
       ElMessage.error("请选择时间")
       return
     }
-    console.log("时间:",time)
+    // console.log("时间:",time)
      const res = await operationLogApi.cleanBefore(time)
     if(res.code === 200){
       ElMessage.success('删除成功')
@@ -408,7 +408,7 @@ const formatDate = (dateString: string) => {
       second: '2-digit'
     })
   } catch (error) {
-    console.log("日期格式化失败:", error)
+    // console.log("日期格式化失败:", error)
     return dateString
   }
 }

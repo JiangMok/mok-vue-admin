@@ -213,7 +213,7 @@ const formRules: FormRules = {
 // ================== 新增：初始化表单数据（编辑时）==================
 const initFormData = async () => {
   if (props.isEdit && props.editData) {
-    console.log('编辑用户数据:', props.editData)
+    // console.log('编辑用户数据:', props.editData)
     // 填充表单数据
     formData.roleName = props.editData.roleName || ''
     formData.roleCode = props.editData.roleCode || ''
@@ -242,14 +242,14 @@ const fetchRolePermission = async (roleId: string) => {
     if (res.code === 200 && res.data) {
 
       const permissionIds = res.data.map(permission => permission.id)
-      console.log('角色已有权限ID:', permissionIds)
+      // console.log('角色已有权限ID:', permissionIds)
       formData.permissionIds = permissionIds
     } else {
-      console.warn('获取角色权限失败:', res.msg)
+      // console.warn('获取角色权限失败:', res.msg)
       formData.permissionIds = []
     }
   } catch (error) {
-    console.error('获取角色权限失败:', error)
+    // console.error('获取角色权限失败:', error)
     ElMessage.error('获取角色权限失败')
     formData.permissionIds = []
   }
@@ -275,10 +275,10 @@ const fetchPermissionList = async () => {
   permissionLoading.value = true
   try {
     const res = await permissionApi.getByUserId()
-    console.log('所有权限列表:', res)
+    // console.log('所有权限列表:', res)
     permissionList.value = res.data || []
   } catch (error) {
-    console.error('获取权限列表失败:', error)
+    // console.error('获取权限列表失败:', error)
     ElMessage.error('获取权限列表失败')
   } finally {
     permissionLoading.value = false
@@ -339,7 +339,7 @@ const handleSubmit = async () => {
       createBy:formData.createBy
     }
 
-    console.log('提交数据:', JSON.stringify(submitData, null, 2))
+    // console.log('提交数据:', JSON.stringify(submitData, null, 2))
 
     // 调用API
     if (props.isEdit && props.editData) {
@@ -360,7 +360,7 @@ const handleSubmit = async () => {
     resetForm()
 
   } catch (error: any) {
-    console.error('表单提交错误:', error)
+    // console.error('表单提交错误:', error)
     if (error.fields) {
       // 表单验证失败
       ElMessage.error('请正确填写表单信息')

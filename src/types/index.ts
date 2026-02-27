@@ -226,6 +226,8 @@ export interface FileItem {
   createBy?: string
   updateBy?: string
   isDeleted: number
+  businessType: string
+
 }
 
 export interface FileUploadResponse {
@@ -243,4 +245,179 @@ export interface FileFormData {
   tags?: string
   businessType?: string
   businessId?: string
+}
+
+export interface ProductItem {
+  id: string
+  productName: string
+  productDesc: string
+  price: number
+  stock: number
+  seckillPrice?: number
+  seckillStock?: number
+  seckillStartTime?: string
+  seckillEndTime?: string
+  status: number
+  version: number
+  createTime: string
+  updateTime: string
+  imageUrl?: string
+}
+
+export interface ProductFormData {
+  id: string
+  productName: string
+  productDesc: string
+  price: number
+  stock: number
+  status: number
+  imageUrl?: string
+}
+
+export interface SeckillFormData {
+  seckillPrice: number
+  seckillStock: number
+  seckillStartTime: string
+  seckillEndTime: string
+}
+
+export interface ProductListParams {
+  pageNum?: number
+  pageSize?: number
+  productName?: string
+  status?: number
+  minPrice?: number
+  maxPrice?: number
+  minStock?: number
+  maxStock?: number
+}
+
+export interface CouponItem {
+  id: string;
+  couponName: string;           // 优惠券名称
+  couponType: number;           // 1-满减券 2-折扣券 3-立减券
+  thresholdAmount?: number | null; // 使用门槛（满减券必填）
+  discountAmount?: number | null; // 优惠金额（满减券/立减券）
+  discountRate?: number | null;   // 折扣率（如85表示8.5折）
+  totalQuantity: number;        // 总发放量
+  remainingQuantity: number;    // 剩余量
+  perLimit: number;            // 每人限领
+  startTime: string;           // 开始时间
+  endTime: string;            // 结束时间
+  status: number;             // 0-禁用 1-启用
+  version: number;
+  createTime: string;
+  updateTime: string;
+}
+
+// 新增/编辑表单数据结构（编辑时包含id）
+export interface CouponFormData {
+  id?: string;
+  couponName: string;
+  couponType: number;
+  thresholdAmount?: number | null;
+  discountAmount?: number | null;
+  discountRate?: number | null;
+  totalQuantity: number;
+  remainingQuantity?: number; // 新增时可忽略，后端自动设置
+  perLimit: number;
+  startTime: string;
+  endTime: string;
+  status: number;
+}
+
+// types/order.ts
+
+/**
+ * 订单信息实体
+ */
+export interface OrderInfoEntity {
+  /** 订单ID */
+  id: string;
+  /** 订单号 */
+  orderNo: string;
+  /** 用户ID */
+  userId: string;
+  /** 商品ID */
+  productId: string;
+  /** 商品名称 */
+  productName: string;
+  /** 商品单价 */
+  productPrice: number;
+  /** 购买数量 */
+  quantity: number;
+  /** 订单原价总额 */
+  originalAmount: number;
+  /** 优惠金额 */
+  discountAmount: number;
+  /** 实付金额 */
+  payAmount: number;
+  /** 订单状态：0待付款 1待发货 2已发货 3已完成 4已取消 */
+  orderStatus: number;
+  /** 支付状态：0未支付 1支付中 2已支付 3已退款 */
+  payStatus: number;
+  /** 支付时间 */
+  payTime?: string | null;
+  /** 支付方式：1微信 2支付宝 3银行卡 */
+  payType?: number | null;
+  /** 支付交易号 */
+  transactionId?: string | null;
+  /** 订单类型：0普通 1秒杀 */
+  orderType: number;
+  /** 取消原因 */
+  cancelReason?: string | null;
+  /** 取消时间 */
+  cancelTime?: string | null;
+  /** 发货时间 */
+  deliveryTime?: string | null;
+  /** 收货时间 */
+  receiveTime?: string | null;
+  /** 关闭时间 */
+  closeTime?: string | null;
+  /** 订单备注 */
+  remark?: string | null;
+  /** 创建时间 */
+  createTime: string;
+  /** 更新时间 */
+  updateTime: string;
+
+  // ========== 以下字段可能仅在详情接口返回 ==========
+  /** 商品规格描述（如颜色、尺寸） */
+  skuDesc?: string;
+  /** 收货人姓名 */
+  receiverName?: string;
+  /** 收货人电话 */
+  receiverPhone?: string;
+  /** 收货地址 */
+  receiverAddress?: string;
+  /** 物流公司 */
+  deliveryCompany?: string;
+  /** 物流单号 */
+  deliveryNo?: string;
+}
+
+
+/**
+ * 发货单实体
+ */
+export interface DeliveryOrderEntity {
+  id: string;
+  deliveryNo: string;
+  orderId: string;
+  orderNo: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  receiverName: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  deliveryStatus: number; // 0待发货 1已发货 2已收货
+  deliveryCompany?: string;
+  deliveryNumber?: string;
+  deliveryTime?: string | null;
+  receiveTime?: string | null;
+  remark?: string | null;
+  createTime: string;
+  updateTime: string;
 }

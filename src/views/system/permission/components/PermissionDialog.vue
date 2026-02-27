@@ -63,6 +63,8 @@
           v-model="formData.parentId"
           placeholder="请选择父级权限"
           clearable
+          filterable
+          filter-placeholder="搜索权限名称或编码"
           style="width: 100%"
           :loading="permissionLoading"
         >
@@ -73,6 +75,7 @@
             :label="getPermissionDisplayName(permission)"
             :value="permission.id"
           >
+            <!-- 原有的自定义内容保持不变 -->
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <span>{{ getPermissionDisplayName(permission) }}</span>
               <div style="display: flex; gap: 8px;">
@@ -114,15 +117,32 @@
       <el-form-item label="图标" prop="icon">
         <el-input
           v-model="formData.icon"
-          placeholder="请输入图标名称或选择图标"
+          placeholder="输入图标名称（如：Search、User、Setting）"
           clearable
           :maxlength="50"
           show-word-limit
         >
           <template #append>
-            <el-button @click="showIconSelector = true">
-              <el-icon><Search /></el-icon>
-            </el-button>
+            <el-dropdown @command="handleIconSelect">
+              <el-button>
+                <el-icon><Search /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="Search">Search</el-dropdown-item>
+                  <el-dropdown-item command="Edit">Edit</el-dropdown-item>
+                  <el-dropdown-item command="Delete">Delete</el-dropdown-item>
+                  <el-dropdown-item command="Plus">Plus</el-dropdown-item>
+                  <el-dropdown-item command="User">User</el-dropdown-item>
+                  <el-dropdown-item command="Setting">Setting</el-dropdown-item>
+                  <el-dropdown-item command="HomeFilled">HomeFilled</el-dropdown-item>
+                  <el-dropdown-item command="Folder">Folder</el-dropdown-item>
+                  <el-dropdown-item command="Document">Document</el-dropdown-item>
+                  <el-dropdown-item command="Star">Star</el-dropdown-item>
+                  <el-dropdown-item command="ShoppingBag">ShoppingBag</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-input>
         <div v-if="formData.icon" class="icon-preview">
@@ -195,7 +215,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import {Search, ShoppingBag} from '@element-plus/icons-vue'
 import type { PermissionFormData, PermissionItem } from '@/types'
 import { permissionApi } from '@/api'
 
@@ -216,6 +236,11 @@ const props = withDefaults(defineProps<Props>(), {
   isEdit: false,
   editData: null
 })
+
+// 处理图标选择
+const handleIconSelect = (command: string) => {
+  formData.icon = command
+}
 
 const emit = defineEmits<Emits>()
 
@@ -341,8 +366,7 @@ const handleTypeChange = (value: number) => {
 const fetchPermissionList = async () => {
   permissionLoading.value = true
   try {
-    // TODO: 可能需要调用不同的接口获取所有权限（非树形结构）
-    // 假设这里调用的是获取所有权限列表的接口
+    // 获取所有权限列表的接口
     const res = await permissionApi.getByUserId()
     // console.log('所有权限列表:', res)
 
@@ -360,7 +384,7 @@ const fetchPermissionList = async () => {
     }
 
   } catch (error) {
-    console.error('获取权限列表失败:', error)
+    // console.error('获取权限列表失败:', error)
     ElMessage.error('获取权限列表失败')
   } finally {
     permissionLoading.value = false
@@ -396,7 +420,7 @@ const getTypeTagType = (type: number) => {
 // 初始化表单数据
 const initFormData = async () => {
   if (props.isEdit && props.editData) {
-    console.log('编辑权限数据:', props.editData)
+    // console.log('编辑权限数据:', props.editData)
 
     // 填充表单数据 - 确保所有字段都有值
     formData.id = props.editData.id || ''
@@ -487,7 +511,7 @@ const handleSubmit = async () => {
       submitData.id = props.editData.id
     }
 
-    console.log('提交数据:', JSON.stringify(submitData, null, 2))
+    // console.log('提交数据:', JSON.stringify(submitData, null, 2))
 
     // 调用API
     if (props.isEdit && props.editData) {
@@ -508,7 +532,7 @@ const handleSubmit = async () => {
     resetForm()
 
   } catch (error: any) {
-    console.error('表单提交错误:', error)
+    // console.error('表单提交错误:', error)
     if (error.fields) {
       // 表单验证失败
       ElMessage.error('请正确填写表单信息')
@@ -586,5 +610,19 @@ onMounted(() => {
   font-size: 12px;
   color: #999;
   margin-top: 4px;
+}
+.icon-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.icon-name {
+  font-size: 12px;
+  color: #666;
 }
 </style>

@@ -184,7 +184,7 @@ const fetchPermissionTree = async () => {
     // TODO: 根据实际接口响应结构调整
     permissionTree.value = res.data || []
   } catch (error) {
-    console.error('获取权限树失败:', error)
+    // console.error('获取权限树失败:', error)
   }
 }
 
@@ -250,7 +250,7 @@ const formatDate = (dateString: string) => {
       second: '2-digit'
     })
   } catch (error) {
-    console.log('日期格式化失败:', error)
+    // console.log('日期格式化失败:', error)
     return dateString
   }
 }
