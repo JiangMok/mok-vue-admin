@@ -7,7 +7,16 @@
           <h2>后台管理系统</h2>
         </div>
       </div>
+      <div class="header-center">
+        <!-- 时间显示（带图标） -->
+        <el-tooltip content="点击同步时间" placement="bottom">
+          <div class="time-display" @click="updateTime">
+            <span>{{ currentTime }}</span>
+          </div>
+        </el-tooltip>
 
+        <!-- 其他功能（通知、全屏等）可以放在这里 -->
+      </div>
       <div class="header-right">
         <el-dropdown @command="handleCommand">
           <span class="user-info">
@@ -49,7 +58,8 @@
 
       <!-- 右侧内容区域 -->
       <div class="content" :class="{ 'no-sidebar': !hasMenu }">
-        <div class="content-header">
+        <!-- 内容头部（面包屑）可保留，也可移入标签栏上方 -->
+        <div class="content-header" v-if="false"> <!-- 可选隐藏，由标签栏替代 -->
           <div class="breadcrumb">
             <el-breadcrumb separator="/">
               <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
@@ -57,12 +67,15 @@
             </el-breadcrumb>
           </div>
         </div>
-
+        <!-- 标签栏 -->
+        <TabsView />
         <div class="content-body">
           <!-- 路由出口 -->
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
-              <component :is="Component" />
+              <keep-alive :include="cachedTabs">
+                <component :is="Component" :key="route.fullPath" />
+              </keep-alive>
             </transition>
           </router-view>
         </div>
@@ -77,10 +90,18 @@ import { useRouter, useRoute } from 'vue-router'
 import { ArrowDown } from '@element-plus/icons-vue'
 import MenuItem from '@/components/MenuItem.vue'
 import { useUserStore } from '@/stores/user'
+import { useTabsStore } from '@/stores/tabs'
+import TabsView from '@/components/TabsView.vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { Clock } from '@element-plus/icons-vue' // 引入时钟图标
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const tabsStore = useTabsStore()
+
+// 需要缓存的组件列表
+const cachedTabs = computed(() => tabsStore.cachedTabs)
 
 // 当前激活的菜单
 const activeMenu = computed(() => {
@@ -125,7 +146,14 @@ const handleCommand = async (command: string) => {
     router.push('/profile')
   }
 }
-
+// 监听路由变化，自动添加标签
+watch(
+  () => route.fullPath,
+  () => {
+    tabsStore.addTab(route)
+  },
+  { immediate: true }
+)
 // 监听路由变化
 // watch(() => route.path, (newPath) => {
 //   console.log('路由变化:', newPath)
@@ -137,6 +165,35 @@ const handleCommand = async (command: string) => {
 //   console.log('当前路由:', route.path)
 //   console.log('用户是否登录:', userStore.isLoggedIn)
 // })
+// 当前时间显示（包含星期）
+const currentTime = ref('')
+let timer: NodeJS.Timer
+
+// 格式化日期时间：YYYY年MM月DD日 星期X HH:MM:SS
+const formatDateTime = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  const weekday = weekdays[date.getDay()]
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}年${month}月${day}日 ${weekday} ${hours}:${minutes}:${seconds}`
+}
+
+const updateTime = () => {
+  currentTime.value = formatDateTime(new Date())
+}
+
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
 </script>
 
 <style scoped>
@@ -220,5 +277,25 @@ const handleCommand = async (command: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+.content-header {
+  display: none; /* 如果不需要面包屑，直接隐藏；若需要，可保留并调整高度 */
+}
+.content-body {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  background: white;
+}
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.current-time {
+  font-size: 14px;
+  color: #666;
 }
 </style>
