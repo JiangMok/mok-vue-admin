@@ -15,6 +15,14 @@
             style="width: 160px"
           />
         </el-form-item>
+          <el-form-item label="发货单号">
+            <el-input
+              v-model="searchForm.params.deliveryNo"
+              placeholder="请输入发货单号"
+              clearable
+              style="width: 160px"
+            />
+          </el-form-item>
         <el-form-item label="收货人">
           <el-input
             v-model="searchForm.params.receiverName"
@@ -203,6 +211,7 @@ const tableList = ref<DeliveryOrderEntity[]>([])
 const searchForm = reactive({
   params: {
     orderNo: '',
+    deliveryNo: '',
     receiverName: '',
     deliveryNumber: '',
     deliveryStatus: undefined as number | undefined
@@ -251,6 +260,7 @@ const fetchList = async () => {
       pageSize: pagination.pageSize,
       params: {
         orderNo: searchForm.params.orderNo,
+        deliveryNo: searchForm.params.deliveryNo,
         receiverName: searchForm.params.receiverName,
         deliveryNumber: searchForm.params.deliveryNumber,
         deliveryStatus: searchForm.params.deliveryStatus
@@ -410,6 +420,8 @@ onMounted(() => {
 <style scoped>
 .delivery-manage {
   padding: 20px;
+  background: white;
+  border-radius: 8px;
 }
 
 .page-header {
@@ -421,11 +433,37 @@ onMounted(() => {
   color: #333;
 }
 
+/* 搜索区域：采用 Flex 布局实现均匀间距，避免底部多余空白 */
 .search-container {
   margin-bottom: 20px;
   padding: 20px;
   background: #f8f9fa;
   border-radius: 4px;
+}
+
+/* 将 el-form 改为 flex 容器，由 gap 控制表单项间距 */
+.search-container .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;  /* 行间距12px，列间距18px */
+  margin: 0;
+}
+
+/* 重置表单项的外边距，完全由 gap 控制 */
+.search-container .el-form-item {
+  margin: 0 !important;
+  width: auto; /* 保持自动宽度 */
+}
+
+/* 按钮组内部：搜索和重置按钮之间增加间距 */
+.search-container .el-form-item .el-button + .el-button {
+  margin-left: 12px;
+}
+
+/* 清除按钮默认的左外边距，使其与左侧表单项对齐 */
+.search-container .el-form-item .el-button:first-child {
+  margin-left: 0;
 }
 
 .table-container {

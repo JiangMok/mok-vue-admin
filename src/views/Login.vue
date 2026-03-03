@@ -189,7 +189,7 @@ const handleLogin = async () => {
       retryLogin()
     } else {
       // 登录失败，显示错误信息
-      ElMessage.error("try.else:"+res.msg || '登录失败')
+      ElMessage.error(res.msg || '登录失败')
 
       // 刷新验证码，防止暴力破解
       refreshCaptcha()

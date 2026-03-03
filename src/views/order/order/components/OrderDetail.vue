@@ -60,16 +60,19 @@
           </div>
         </el-descriptions-item>
 
-        <el-descriptions-item label="物流信息" v-if="orderData?.deliveryTime">
-          <div class="detail-content">
-            <div>发货时间：{{ formatDateTime(orderData.deliveryTime) }}</div>
-            <div>物流公司：{{ orderData.deliveryCompany || '--' }}</div>
-            <div>物流单号：{{ orderData.deliveryNo || '--' }}</div>
-          </div>
-        </el-descriptions-item>
+<!--        <el-descriptions-item label="物流信息" v-if="orderData?.deliveryTime">-->
+<!--          <div class="detail-content">-->
+<!--            <div>发货时间：{{ formatDateTime(orderData.deliveryTime) }}</div>-->
+<!--            <div>物流公司：{{ orderData.deliveryCompany || '&#45;&#45;' }}</div>-->
+<!--            <div>物流单号：{{ orderData.deliveryNo || '&#45;&#45;' }}</div>-->
+<!--          </div>-->
+<!--        </el-descriptions-item>-->
 
         <el-descriptions-item label="备注">
           <div class="detail-content">{{ orderData?.remark || '无' }}</div>
+        </el-descriptions-item>
+        <el-descriptions-item label="取消原因">
+          <div class="detail-content">{{ orderData?.cancelReason || '无' }}</div>
         </el-descriptions-item>
 
         <el-descriptions-item label="创建时间">
@@ -136,6 +139,7 @@ const formatDateTime = (dateString: string) => {
   }
 }
 
+// 订单状态映射
 const getOrderStatusText = (status: number) => {
   const map: Record<number, string> = {
     0: '待付款',
@@ -146,7 +150,6 @@ const getOrderStatusText = (status: number) => {
   }
   return map[status] || '未知'
 }
-
 const getOrderStatusTag = (status: number) => {
   const map: Record<number, string> = {
     0: 'danger',
@@ -158,26 +161,27 @@ const getOrderStatusTag = (status: number) => {
   return map[status] || ''
 }
 
+// 支付状态映射
 const getPayStatusText = (status: number) => {
   const map: Record<number, string> = {
     0: '未支付',
     1: '支付中',
     2: '已支付',
-    3: '已退款'
+    3: '已退款',
+    4: '已取消'
   }
   return map[status] || '未知'
 }
-
 const getPayStatusTag = (status: number) => {
   const map: Record<number, string> = {
     0: 'danger',
-    1: 'warning',
+    1: 'primary',
     2: 'success',
-    3: 'info'
+    3: 'info',
+    4: 'warning',
   }
   return map[status] || ''
 }
-
 const getPayTypeText = (type: number) => {
   const map: Record<number, string> = {
     1: '微信支付',
