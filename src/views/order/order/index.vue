@@ -27,20 +27,23 @@
           />
         </el-form-item>
         <el-form-item label="订单状态">
-          <el-select v-model="searchForm.params.orderStatus" placeholder="请选择" clearable style="width: 120px">
-            <el-option label="待付款" :value="0" />
-            <el-option label="待发货" :value="1" />
-            <el-option label="已发货" :value="2" />
-            <el-option label="已完成" :value="3" />
-            <el-option label="已取消" :value="4" />
+          <el-select v-model="searchForm.params.orderStatus" placeholder="请选择" clearable
+                     style="width: 120px">
+            <el-option label="待付款" :value="0"/>
+            <el-option label="待发货" :value="1"/>
+            <el-option label="已发货" :value="2"/>
+            <el-option label="已完成" :value="3"/>
+            <el-option label="已取消" :value="4"/>
           </el-select>
         </el-form-item>
         <el-form-item label="支付状态">
-          <el-select v-model="searchForm.params.payStatus" placeholder="请选择" clearable style="width: 120px">
-            <el-option label="未支付" :value="0" />
-            <el-option label="支付中" :value="1" />
-            <el-option label="已支付" :value="2" />
-            <el-option label="已退款" :value="3" />
+          <el-select v-model="searchForm.params.payStatus" placeholder="请选择" clearable
+                     style="width: 120px">
+            <el-option label="未支付" :value="0"/>
+            <el-option label="支付中" :value="1"/>
+            <el-option label="已支付" :value="2"/>
+            <el-option label="已退款" :value="3"/>
+            <el-option label="已取消" :value="4"/>
           </el-select>
         </el-form-item>
         <el-form-item label="下单时间">
@@ -71,7 +74,7 @@
         style="width: 100%"
         row-key="id"
       >
-        <el-table-column prop="orderNo" label="订单号" width="180" />
+        <el-table-column prop="orderNo" label="订单号" width="180"/>
         <el-table-column label="商品信息" min-width="220">
           <template #default="{ row }">
             <div class="product-info">
@@ -131,18 +134,18 @@
               type="warning"
               size="small"
               @click="handleCancel(row)"
-              v-if="userStore.hasPermission('order:order:cancel')"
+              v-if="row.payStatus === 0 && userStore.hasPermission('order:order:cancel')"
             >
               取消
             </el-button>
-<!--            <el-button-->
-<!--              type="info"-->
-<!--              size="small"-->
-<!--              @click="handleConfirmReceive(row)"-->
-<!--              v-if="row.orderStatus === 2 && userStore.hasPermission('order:order:confirm')"-->
-<!--            >-->
-<!--              确认收货-->
-<!--            </el-button>-->
+            <!--            <el-button-->
+            <!--              type="info"-->
+            <!--              size="small"-->
+            <!--              @click="handleConfirmReceive(row)"-->
+            <!--              v-if="row.orderStatus === 2 && userStore.hasPermission('order:order:confirm')"-->
+            <!--            >-->
+            <!--              确认收货-->
+            <!--            </el-button>-->
           </template>
         </el-table-column>
       </el-table>
@@ -170,11 +173,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { orderApi} from '@/api'  // 假设订单API已定义
-import type { OrderInfoEntity } from '@/types'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {useUserStore} from '@/stores/user'
+import {orderApi} from '@/api' // 假设订单API已定义
+import type {OrderInfoEntity} from '@/types'
 import OrderDetail from '@/views/order/order/components/OrderDetail.vue'
 
 const userStore = useUserStore()
@@ -272,12 +275,16 @@ const handlePay = async (row: OrderInfoEntity) => {
       type: 'info'
     })
     // 调用支付接口
-    await orderApi.payOrder({
-      orderNo:row.orderNo,
-      payType:1
+    const res = await orderApi.payOrder({
+      orderNo: row.orderNo,
+      payType: 1
     }) // 假设默认支付类型1
-    ElMessage.success('支付成功')
-    fetchList() // 刷新列表
+    if (res.code === 200) {
+      ElMessage.success('支付成功')
+      fetchList() // 刷新列表
+    } else {
+      ElMessage.error('支付失败:' + res.msg)
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('支付失败')
@@ -288,14 +295,18 @@ const handlePay = async (row: OrderInfoEntity) => {
 // 取消订单
 const handleCancel = async (row: OrderInfoEntity) => {
   try {
-    const { value: reason } = await ElMessageBox.prompt('请输入取消原因', '取消订单', {
+    const {value: reason} = await ElMessageBox.prompt('请输入取消原因', '取消订单', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputPlaceholder: '请输入取消原因'
     })
-    await orderApi.cancelOrder(row.orderNo, reason)
-    ElMessage.success('订单已取消')
-    fetchList()
+    const res = await orderApi.cancelOrder(row.orderNo, reason)
+    if (res.code === 200) {
+      ElMessage.success('订单已取消')
+      fetchList()
+    } else {
+      ElMessage.error('取消失败:' + res.msg)
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('取消失败')
@@ -385,16 +396,18 @@ const getPayStatusText = (status: number) => {
     0: '未支付',
     1: '支付中',
     2: '已支付',
-    3: '已退款'
+    3: '已退款',
+    4: '已取消'
   }
   return map[status] || '未知'
 }
 const getPayStatusTag = (status: number) => {
   const map: Record<number, string> = {
     0: 'danger',
-    1: 'warning',
+    1: 'primary',
     2: 'success',
-    3: 'info'
+    3: 'info',
+    4: 'warning',
   }
   return map[status] || ''
 }
@@ -408,6 +421,8 @@ onMounted(() => {
 <style scoped>
 .order-manage {
   padding: 20px;
+  background: white;
+  border-radius: 8px;
 }
 
 .page-header {
@@ -422,11 +437,37 @@ onMounted(() => {
   color: #333;
 }
 
+/* 搜索区域：采用 Flex 布局实现均匀间距，避免底部多余空白 */
 .search-container {
   margin-bottom: 20px;
   padding: 20px;
   background: #f8f9fa;
   border-radius: 4px;
+}
+
+/* 将 el-form 改为 flex 容器，由 gap 控制表单项间距 */
+.search-container .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;  /* 行间距12px，列间距18px */
+  margin: 0;
+}
+
+/* 重置表单项的外边距，完全由 gap 控制 */
+.search-container .el-form-item {
+  margin: 0 !important;
+  width: auto; /* 保持自动宽度 */
+}
+
+/* 日期范围选择器固定宽度 */
+.search-container .el-date-editor--datetimerange {
+  width: 360px;
+}
+
+/* 按钮组内部：搜索和重置按钮之间增加间距 */
+.search-container .el-form-item .el-button + .el-button {
+  margin-left: 12px;
 }
 
 .table-container {
@@ -438,26 +479,39 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+/* 商品信息列：确保换行后行间距明显 */
 .product-info {
-  padding: 4px 0;
-}
-.product-name {
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-.product-sku {
-  font-size: 12px;
-  color: #666;
-}
-.product-quantity {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
+  line-height: 2.0;
 }
 
-.amount-info {
-  line-height: 1.6;
+.product-info .product-name {
+  font-weight: 500;
+  margin-bottom: 8px;
 }
+
+.product-info .product-sku {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.product-info .product-quantity {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 金额信息列 */
+.amount-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 2.0;
+}
+
+.amount-info div {
+  line-height: 2.0;
+}
+
 .pay-amount {
   font-weight: 500;
   color: #ff6b35;

@@ -108,7 +108,7 @@
       </el-form-item>
 
       <!-- 状态 -->
-      <el-form-item label="状态" prop="status">
+      <el-form-item label="状态" prop="status" v-if="statusShow">
         <el-radio-group v-model="formData.status">
           <el-radio :value="1">启用</el-radio>
           <el-radio :value="0">禁用</el-radio>
@@ -132,10 +132,10 @@
             :label="role.roleName || role.name"
             :value="role.id"
           >
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-weight: 500;">{{ role.roleName || role.name }}</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;" >
+              <span style="font-weight: 500;" >{{ role.roleName || role.name }}</span>
               <div style="display: flex; gap: 8px;">
-                <el-tag size="small" type="info">{{ role.roleCode || role.code }}</el-tag>
+                <el-tag size="small" type="info" >{{ role.roleCode || role.code }}</el-tag>
                 <el-tag
                   size="small"
                   :type="role.status === 1 ? 'success' : 'danger'"
@@ -224,6 +224,7 @@ const formData = reactive<UserFormData>({
 // 角色列表
 const roleList = ref<RoleItem[]>([])
 const roleLoading = ref(false)
+const statusShow = ref(true)
 
 // 提交加载状态
 const submitLoading = ref(false)
@@ -328,7 +329,24 @@ const formRules: FormRules = {
 const initFormData = async () => {
   if (props.isEdit && props.editData) {
     // console.log('编辑用户数据:', props.editData)
-
+    // const userId = userStore.userId
+    // const targetUserId = props.editData.id
+    // const isMe = userId === targetUserId
+    // if(isMe){
+    //   statusShow.value = false
+    // }
+    watch(
+      () => ({
+        userId: userStore.userId,
+        targetUserId: props.editData.id
+      }),
+      ({ userId, targetUserId }) => {
+        if (userId && targetUserId) {
+          statusShow.value = userId !== targetUserId
+        }
+      },
+      { immediate: true }  // 立即执行一次
+    )
     // 填充表单数据
     formData.username = props.editData.username || ''
     formData.nickname = props.editData.nickname || ''
@@ -512,19 +530,26 @@ const handleSubmit = async () => {
     // 调用API
     if (props.isEdit && props.editData) {
       // 编辑用户
-      await userApi.updateUser({ id: props.editData.id, ...submitData })
-      userStore.setUserInfo({
-        createTime: "",
-        id: props.editData.id,
-        updateTime: "",
-        status: submitData.status,
-        username: submitData.username,
-        nickname: submitData.nickname,
-        phone: submitData.phone,
-        email: submitData.email,
-        avatar: submitData.avatar
-      })
-      ElMessage.success('用户更新成功')
+      const res = await userApi.updateUser({ id: props.editData.id, ...submitData })
+      //如果是修改的当前帐号,则把userStore里的缓存信息一并修改
+      if(userStore.userId == props.editData.id){
+        userStore.setUserInfo({
+          createTime: "",
+          id: props.editData.id,
+          updateTime: "",
+          status: submitData.status,
+          username: submitData.username,
+          nickname: submitData.nickname,
+          phone: submitData.phone,
+          email: submitData.email,
+          avatar: submitData.avatar
+        })
+      }
+      if(res.code === 200){
+        ElMessage.success('用户更新成功')
+        }else{
+        ElMessage.error(res.msg)
+      }
     } else {
       // 新增用户
       await userApi.addUser(submitData)

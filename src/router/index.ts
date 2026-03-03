@@ -148,12 +148,12 @@ function addDynamicRoutes(menus: MenuItem[]) {
 
 // 路由守卫保持不变
 router.beforeEach(async (to, from, next) => {
-  console.log('======跳转到:', to.path)
-  console.log('======当前所有路由:', router.getRoutes().map(r => r.path))
+  // console.log('======跳转到:', to.path)
+  // console.log('======当前所有路由:', router.getRoutes().map(r => r.path))
   // 获取用户状态存储实例
   const userStore = useUserStore()
   //调试日志,显示路由跳转信息
-  console.log('路由守卫: from', from.path, " to", to.path)
+  // console.log('路由守卫: from', from.path, " to", to.path)
 
   // 设置页面标题
   if (to.meta.title) {

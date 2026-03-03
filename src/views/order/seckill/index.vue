@@ -1,7 +1,7 @@
 <template>
   <div class="seckill-manage">
     <div class="page-header">
-      <h2>秒杀管理</h2>
+      <h2>模拟秒杀下单</h2>
     </div>
 
     <el-row :gutter="20">
@@ -116,8 +116,7 @@ const handleSeckillOrder = async () => {
   const verifyCode = orderForm.verifyCode || undefined
   try {
     orderLoading.value = true
-    const res = await seckillApi.seckillOrder(productId, quantity, verifyCode
-    )
+    const res = await seckillApi.seckillOrder(productId, quantity, verifyCode)
     if (res.code === 200) {
       ElMessage.success(`下单成功，订单号：${res.data}`)
     } else {
@@ -188,6 +187,8 @@ const handleInitStock = async () => {
 <style scoped>
 .seckill-manage {
   padding: 20px;
+  background: white;
+  border-radius: 8px;
 }
 
 .page-header {

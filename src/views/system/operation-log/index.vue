@@ -1,5 +1,5 @@
 <template>
-  <div class="user-manage">
+  <div class="operateLog-manage">
     <div class="page-header">
       <h2>操作日志</h2>
     </div>
@@ -7,22 +7,22 @@
     <!-- 搜索区域 -->
     <div class="search-container">
       <el-form :model="searchForm" inline>
-        <el-form-item label="用户名">
+        <el-form-item label="模块">
           <el-input
             v-model="searchForm.keyword"
-            placeholder="请输入模块标题"
+            placeholder="请输入模块名称"
             clearable
           />
         </el-form-item>
 
-        <el-form-item label="操作类别">
-          <el-select v-model="searchForm.params.operatorType" placeholder="操作类别" clearable
+        <el-form-item label="业务类型">
+          <el-select v-model="searchForm.params.businessType" placeholder="操作类别" clearable
                      style="width: 120px">
             <el-option label="全部" :value="''"/>
-            <el-option label="新增" :value="1"/>
-            <el-option label="修改" :value="2"/>
-            <el-option label="删除" :value="3"/>
-            <el-option label="其它" :value="0"/>
+            <el-option label="新增" :value="'新增'"/>
+            <el-option label="修改" :value="'修改'"/>
+            <el-option label="删除" :value="'删除'"/>
+            <el-option label="其它" :value="'其它'"/>
           </el-select>
         </el-form-item>
 
@@ -74,13 +74,7 @@
         <el-table-column prop="businessType" label="业务类型" width=""/>
         <!--        <el-table-column prop="method" label="方法名称" width=""/>-->
         <el-table-column prop="requestMethod" label="请求方式" width=""/>
-        <el-table-column label="操作类别" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getOperatorTypeTag(row.operatorType)" size="small">
-              {{ formatOperatorType(row.operatorType) }}
-            </el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="businessType" label="操作类别" width=""/>
         <!--        <el-table-column prop="operatorId" label="操作人员ID" width=""/>-->
         <el-table-column prop="operatorName" label="操作人员" width=""/>
         <!--        <el-table-column prop="deptName" label="部门名称" width=""/>-->
@@ -175,7 +169,7 @@ const operationLogList = ref<OperationLog[]>([])
 const searchForm = reactive({
   keyword: '',
   params: {
-    operatorType: undefined,
+    businessType: undefined,
     status: undefined
   }
 })
@@ -290,24 +284,6 @@ const handleDelete = async (row: OperationLog) => {
   }
 }
 
-// 格式化操作类型文本
-const formatOperatorType = (type: number) => {
-  const typeMap: Record<number, string> = {
-    0: '其他',
-    1: '后台用户',
-    2: '手机端用户'
-  }
-  return typeMap[type] || '未知'
-}
-// 获取操作类型的标签样式
-const getOperatorTypeTag = (type: number) => {
-  const typeMap: Record<number, string> = {
-    0: 'info',
-    1: 'primary',
-    2: 'success'
-  }
-  return typeMap[type] || 'info'
-}
 //===========================函数---结束==============================
 //===========================分页---开始==============================
 //分页参数
@@ -387,7 +363,7 @@ const cleanBefore = async () => {
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.params.status = undefined
-  searchForm.params.operatorType = undefined
+  searchForm.params.businessType = undefined
   pagination.pageNum = 1
   fetchList()
 }
@@ -415,6 +391,12 @@ const formatDate = (dateString: string) => {
 </script>
 
 <style scoped>
+.operateLog-manage {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -427,11 +409,52 @@ const formatDate = (dateString: string) => {
   color: #333;
 }
 
+/* 搜索区域：采用 Flex 布局实现均匀间距，避免底部多余空白 */
 .search-container {
   margin-bottom: 20px;
   padding: 20px;
   background: #f8f9fa;
   border-radius: 4px;
+}
+
+/* 第一个搜索表单（主要搜索条件） */
+.search-container .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;  /* 行间距12px，列间距18px */
+  margin: 0 0 16px 0;  /* 与第二个表单之间保持16px间距 */
+}
+
+/* 第二个搜索表单（清除日期） */
+.search-container .el-form:last-child {
+  margin-bottom: 0;  /* 最后一个表单底部不留外边距 */
+}
+
+/* 重置表单项的外边距，完全由 gap 控制 */
+.search-container .el-form-item {
+  margin: 0 !important;
+  width: auto;
+}
+
+/* 业务类型和操作状态选择器宽度固定（保持原有内联样式 width:120px 已生效） */
+.search-container .el-select {
+  width: 120px;
+}
+
+/* 日期选择器宽度自动适应 */
+.search-container .el-date-editor {
+  width: auto;
+}
+
+/* 按钮组内部：搜索和重置按钮之间增加间距 */
+.search-container .el-form-item .el-button + .el-button {
+  margin-left: 12px;
+}
+
+/* 清除按钮默认的左外边距，使其与左侧表单项对齐 */
+.search-container .el-form-item .el-button:first-child {
+  margin-left: 0;
 }
 
 .table-container {

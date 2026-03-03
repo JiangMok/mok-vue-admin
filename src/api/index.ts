@@ -70,7 +70,7 @@ export const userApi = {
   },
 
   // 更新用户
-  updateUser: (data: Partial<UserInfo>) => {
+  updateUser: (data: Partial<UserInfo>):Promise<ApiResponse> => {
     return request.post('/user/update', data)
   },
 
@@ -355,8 +355,14 @@ export const orderApi = {
   payOrder(params: {
     orderNo: string
     payType: number
-  }){
+  }):Promise<ApiResponse>{
     return request.post('/order/pay', params)
+  },
+  cancelOrder(
+    orderNo: string,
+    reason: string
+  ):Promise<ApiResponse>{
+    return request.post(`/order/cancel?orderNo=${orderNo}&cancelReason=${reason}`)
   }
 }
 
