@@ -189,6 +189,11 @@ const updateTime = () => {
 onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
+  tabsStore.closeAllTabs()
+  // 3. 如果当前不在首页，则跳转到首页
+  if (route.path !== '/') {
+    router.push('/')
+  }
 })
 
 onUnmounted(() => {
@@ -262,12 +267,7 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.content-body {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background: #f0f2f5;
-}
+
 
 .fade-enter-active,
 .fade-leave-active {
