@@ -202,73 +202,264 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ===== 布局容器 - 纯浅色渐变背景（无动画、无光斑） ===== */
 .layout-container {
   height: 100vh;
+  overflow: hidden; /* 禁止浏览器滚动条，所有滚动在内部处理 */
   display: flex;
   flex-direction: column;
+  background: linear-gradient(145deg, #eef2f6, #d9e2ef, #f0f4fa, #e6ecf5);
+  color: #1e2b3a;
 }
 
+/* ===== 顶部导航栏 ===== */
 .header {
-  height: 60px;
-  background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  height: 64px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 24px;
   z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
+/* Logo */
 .header-left .logo h2 {
   margin: 0;
-  color: #409eff;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7b9cff, #b08cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+}
+
+/* 中间区域（时间显示） */
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.time-display {
+  font-size: 16px;
+  color: #1e2b3a;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 20px;
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.time-display:hover {
+  background: #ffffff;
+  border-color: #7b9cff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 156, 255, 0.2);
+}
+
+/* 右侧用户信息 */
+.header-right {
+  display: flex;
+  align-items: center;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
-  gap: 8px;
+  gap: 10px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.user-info:hover {
+  background: #ffffff;
+  border-color: #b08cff;
 }
 
 .username {
   font-size: 14px;
+  font-weight: 500;
+  color: #1e2b3a;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* 头像 */
+:deep(.el-avatar) {
+  background: linear-gradient(135deg, #7b9cff, #b08cff);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  font-weight: 600;
+}
+
+/* 下拉菜单图标 */
+.user-info .el-icon {
+  color: #7f8c8d;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.user-info:hover .el-icon {
+  transform: rotate(180deg);
+  color: #b08cff;
+}
+
+/* ===== 主容器 ===== */
 .main-container {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  overflow: hidden; /* 防止内部溢出产生浏览器滚动条 */
 }
 
+/* ===== 左侧菜单 ===== */
 .sidebar {
-  width: 220px;
-  background-color: #304156;
-  overflow-y: auto;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
+  overflow-y: auto; /* 菜单过多时内部滚动 */
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
 }
 
+/* Element Plus 菜单覆盖 - 浅色主题 */
+:deep(.el-menu) {
+  border-right: none !important;
+  background: transparent !important;
+}
+
+:deep(.el-menu-item) {
+  height: 50px;
+  line-height: 50px;
+  color: #5a6a7a !important;
+  background: transparent !important;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+  margin: 4px 8px;
+  border-radius: 8px;
+}
+
+:deep(.el-menu-item.is-active) {
+  color: #7b9cff !important;
+  background: linear-gradient(90deg, rgba(123, 156, 255, 0.1), transparent) !important;
+  border-left-color: #7b9cff;
+}
+
+:deep(.el-menu-item:hover) {
+  color: #1e2b3a !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-sub-menu__title) {
+  color: #5a6a7a !important;
+  background: transparent !important;
+  height: 50px;
+  line-height: 50px;
+  border-radius: 8px;
+  margin: 4px 8px;
+}
+
+:deep(.el-sub-menu__title:hover) {
+  color: #1e2b3a !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-menu--inline) {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu .el-icon) {
+  color: inherit;
+}
+
+/* 滚动条美化 - 浅色 */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ===== 右侧内容区域 ===== */
 .content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* 防止内容溢出产生浏览器滚动条 */
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.content.no-sidebar {
-  margin-left: 0;
+/* 标签栏区域（TabsView 样式穿透） */
+:deep(.tabs-view) {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
+  padding: 4px 16px 0;
 }
 
-.content-header {
-  height: 50px;
-  background: white;
-  border-bottom: 1px solid #e6e6e6;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
+:deep(.tabs-view .el-tabs__header) {
+  margin: 0 !important;
+  border-bottom: none !important;
 }
 
+:deep(.tabs-view .el-tabs__nav-wrap::after) {
+  display: none;
+}
 
+:deep(.tabs-view .el-tabs__item) {
+  color: #5a6a7a !important;
+  height: 40px;
+  line-height: 40px;
+  border-radius: 20px 20px 0 0;
+  transition: all 0.2s;
+}
 
+:deep(.tabs-view .el-tabs__item.is-active) {
+  color: #7b9cff !important;
+  background: rgba(123, 156, 255, 0.1);
+}
+
+:deep(.tabs-view .el-tabs__item:hover) {
+  color: #1e2b3a !important;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.tabs-view .el-tabs__active-bar) {
+  background: linear-gradient(90deg, #7b9cff, #b08cff);
+  height: 3px;
+}
+
+/* 内容主体 - 允许内部滚动 */
+.content-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto; /* 只有这里可以滚动，不会触发浏览器滚动条 */
+  background: transparent;
+}
+
+/* 路由过渡动画 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -278,24 +469,48 @@ onUnmounted(() => {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* 隐藏原面包屑 */
 .content-header {
-  display: none; /* 如果不需要面包屑，直接隐藏；若需要，可保留并调整高度 */
+  display: none;
 }
-.content-body {
-  flex: 1;
-  padding: 0;
-  overflow-y: auto;
-  background: white;
+
+/* 无菜单时的内容区域 */
+.content.no-sidebar {
+  margin-left: 0;
 }
-.header-center {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
+
+/* ===== 响应式调整 ===== */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .header-left .logo h2 {
+    font-size: 18px;
+  }
+
+  .time-display {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+
+  .username {
+    max-width: 80px;
+  }
+
+  .sidebar {
+    width: 200px;
+  }
 }
-.current-time {
-  font-size: 14px;
-  color: #666;
+
+@media (max-width: 576px) {
+  .username {
+    display: none;
+  }
+
+  .time-display {
+    display: none;
+  }
 }
 </style>

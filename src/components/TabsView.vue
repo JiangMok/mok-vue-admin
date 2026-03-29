@@ -133,13 +133,9 @@ const closeTab = (path: string) => {
 }
 
 const refreshTab = (path: string) => {
-  if (path !== route.path) {
-    router.push(path).then(() => {
-      tabsStore.refreshTab(path)
-    })
-  } else {
-    tabsStore.refreshTab(path)
-  }
+  const currentRoute = router.currentRoute.value
+  const newQuery = { ...currentRoute.query, _t: Date.now() }  // 添加时间戳参数
+  router.push({ path, query: newQuery })
 }
 </script>
 

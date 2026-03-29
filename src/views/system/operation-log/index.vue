@@ -7,10 +7,10 @@
     <!-- 搜索区域 -->
     <div class="search-container">
       <el-form :model="searchForm" inline>
-        <el-form-item label="模块">
+        <el-form-item label="关键词">
           <el-input
             v-model="searchForm.keyword"
-            placeholder="请输入模块名称"
+            placeholder="操作模块"
             clearable
           />
         </el-form-item>
@@ -19,6 +19,7 @@
           <el-select v-model="searchForm.params.businessType" placeholder="操作类别" clearable
                      style="width: 120px">
             <el-option label="全部" :value="''"/>
+            <el-option label="查询" :value="'查询'"/>
             <el-option label="新增" :value="'新增'"/>
             <el-option label="修改" :value="'修改'"/>
             <el-option label="删除" :value="'删除'"/>
@@ -209,7 +210,8 @@ const shortcuts = [
 ]
 
 const disabledDate = (time: Date) => {
-  return time.getTime() > Date.now()
+  // return time.getTime() > Date.now()
+  return false
 }
 const size = ref<'default'>('default')
 //===========================函数---开始==============================
@@ -260,7 +262,7 @@ const fetchList = async () => {
   }
 }
 /**
- * 删除用户
+ * 删除
  */
 const handleDelete = async (row: OperationLog) => {
   try {

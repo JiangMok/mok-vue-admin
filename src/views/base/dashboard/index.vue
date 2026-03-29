@@ -81,37 +81,38 @@
         </template>
 
         <div class="health-grid">
-          <!-- 数据库状态 -->
-          <div class="health-item" :class="healthData.database?.up ? 'healthy' : 'unhealthy'">
+          <!-- 应用状态 -->
+          <div class="health-item" :class="healthData.status === 'UP' ? 'healthy' : 'unhealthy'">
             <div class="health-icon">
               <el-icon :size="32">
-                <Coin v-if="healthData.database?.up" />
+                <SetUp v-if="healthData.status === 'UP'" />
                 <Warning v-else />
               </el-icon>
             </div>
             <div class="health-content">
-              <h4>数据库</h4>
+              <h4>应用服务</h4>
               <div class="health-status">
-                <el-tag :type="healthData.database?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.database?.status || '未知' }}
+                <el-tag :type="healthData.status === 'UP' ? 'success' : 'danger'" size="small">
+                  {{ healthData.status || '未知' }}
                 </el-tag>
               </div>
               <div class="health-details">
                 <div class="detail-item">
-                  <span class="detail-label">响应时间：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.responseTime || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">用户数：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.userCount || '--' }}</span>
+                  <span class="detail-label">应用名称：</span>
+                  <span class="detail-value">{{ healthData.application || '--' }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">版本：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.version || '--' }}</span>
+                  <span class="detail-value">v{{ healthData.version || '--' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">检测时间：</span>
+                  <span class="detail-value">{{ formatTimestamp(healthData.timestamp) }}</span>
                 </div>
               </div>
             </div>
           </div>
+
 
           <!-- 内存状态 -->
           <div class="health-item" :class="healthData.memory?.up ? 'healthy' : 'unhealthy'">
@@ -154,7 +155,37 @@
               </div>
             </div>
           </div>
-
+          <!-- 数据库状态 -->
+          <div class="health-item" :class="healthData.database?.up ? 'healthy' : 'unhealthy'">
+            <div class="health-icon">
+              <el-icon :size="32">
+                <Coin v-if="healthData.database?.up" />
+                <Warning v-else />
+              </el-icon>
+            </div>
+            <div class="health-content">
+              <h4>数据库</h4>
+              <div class="health-status">
+                <el-tag :type="healthData.database?.up ? 'success' : 'danger'" size="small">
+                  {{ healthData.database?.status || '未知' }}
+                </el-tag>
+              </div>
+              <div class="health-details">
+                <div class="detail-item">
+                  <span class="detail-label">响应时间：</span>
+                  <span class="detail-value">{{ healthData.database?.details?.responseTime || '--' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">用户数：</span>
+                  <span class="detail-value">{{ healthData.database?.details?.userCount || '--' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">版本：</span>
+                  <span class="detail-value">{{ healthData.database?.details?.version || '--' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- Redis状态 -->
           <div class="health-item" :class="healthData.redis?.up ? 'healthy' : 'unhealthy'">
             <div class="health-icon">
@@ -187,33 +218,77 @@
             </div>
           </div>
 
-          <!-- 应用状态 -->
-          <div class="health-item" :class="healthData.status === 'UP' ? 'healthy' : 'unhealthy'">
+
+          <!-- Elasticsearch 状态 -->
+          <div class="health-item" :class="healthData.elasticsearch?.up ? 'healthy' : 'unhealthy'">
             <div class="health-icon">
               <el-icon :size="32">
-                <SetUp v-if="healthData.status === 'UP'" />
+                <Document v-if="healthData.elasticsearch?.up" />
                 <Warning v-else />
               </el-icon>
             </div>
             <div class="health-content">
-              <h4>应用服务</h4>
+              <h4>Elasticsearch</h4>
               <div class="health-status">
-                <el-tag :type="healthData.status === 'UP' ? 'success' : 'danger'" size="small">
-                  {{ healthData.status || '未知' }}
+                <el-tag :type="healthData.elasticsearch?.up ? 'success' : 'danger'" size="small">
+                  {{ healthData.elasticsearch?.status || '未知' }}
                 </el-tag>
               </div>
               <div class="health-details">
                 <div class="detail-item">
-                  <span class="detail-label">应用名称：</span>
-                  <span class="detail-value">{{ healthData.application || '--' }}</span>
+                  <span class="detail-label">集群状态：</span>
+                  <span class="detail-value">{{ healthData.elasticsearch?.details?.status || '--' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">版本：</span>
-                  <span class="detail-value">v{{ healthData.version || '--' }}</span>
+                  <span class="detail-label">集群名称：</span>
+                  <span class="detail-value">{{ healthData.elasticsearch?.details?.clusterName || '--' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">检测时间：</span>
-                  <span class="detail-value">{{ formatTimestamp(healthData.timestamp) }}</span>
+                  <span class="detail-label">节点数：</span>
+                  <span class="detail-value">{{ healthData.elasticsearch?.details?.nodeCount || '--' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">数据节点：</span>
+                  <span class="detail-value">{{ healthData.elasticsearch?.details?.dataNodeCount || '--' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">响应时间：</span>
+                  <span class="detail-value">{{ healthData.elasticsearch?.details?.responseTime || '--' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- RabbitMQ 状态 -->
+          <div class="health-item" :class="healthData.rabbitmq?.up ? 'healthy' : 'unhealthy'">
+            <div class="health-icon">
+              <el-icon :size="32">
+                <Connection v-if="healthData.rabbitmq?.up" />
+                <Warning v-else />
+              </el-icon>
+            </div>
+            <div class="health-content">
+              <h4>RabbitMQ</h4>
+              <div class="health-status">
+                <el-tag :type="healthData.rabbitmq?.up ? 'success' : 'danger'" size="small">
+                  {{ healthData.rabbitmq?.status || '未知' }}
+                </el-tag>
+              </div>
+              <div class="health-details">
+                <div class="detail-item">
+                  <span class="detail-label">地址：</span>
+                  <span class="detail-value">{{ healthData.rabbitmq?.details?.host }}:{{ healthData.rabbitmq?.details?.port }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">虚拟主机：</span>
+                  <span class="detail-value">{{ healthData.rabbitmq?.details?.virtualHost }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">响应时间：</span>
+                  <span class="detail-value">{{ healthData.rabbitmq?.details?.responseTime }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">连接状态：</span>
+                  <span class="detail-value">{{ healthData.rabbitmq?.details?.connectionStatus }}</span>
                 </div>
               </div>
             </div>
@@ -344,7 +419,8 @@ import {
   SetUp,
   Warning,
   DataLine,
-  InfoFilled, Tools
+  InfoFilled, Tools,
+  Connection
 } from '@element-plus/icons-vue'
 import { sysInfoApi } from "@/api";
 
@@ -372,6 +448,28 @@ const healthData = reactive({
     },
     up: false
   },
+  elasticsearch: {   // 新增
+    status: '',
+    details: {
+      clusterName: '',
+      status: '',
+      responseTime: '',
+      nodeCount: '',
+      dataNodeCount: ''
+    },
+    up: false
+  },
+  rabbitmq: {   // 新增
+    status: '',
+    details: {
+      host: '',
+      port: '',
+      virtualHost: '',
+      responseTime: '',
+      connectionStatus: ''
+    },
+    up: false
+  },
   memory: {
     status: '',
     details: {
@@ -383,8 +481,6 @@ const healthData = reactive({
     },
     up: false
   },
-  application: '',
-  version: '',
   redis: {
     status: '',
     details: {
@@ -394,6 +490,8 @@ const healthData = reactive({
     },
     up: false
   },
+  application: '',
+  version: '',
   timestamp: 0,
   status: ''
 })

@@ -208,16 +208,19 @@ export const operationLogApi = {
     pageNum: number
     pageSize: number
   }): Promise<ApiResponse<PageResponse<OperationLog>>> => {
-    return request.post('/operation-log/page', params)
+    //从 mysql 查询
+    // return request.post('/operation-log/page', params)
+    //从 elastic search 查询
+    return request.post('/es-operation-log/page', params)
   },
   getOperationLogById: (id: string): Promise<ApiResponse<OperationLog>> => {
     return request.get(`/operation-log/${id}`)
   },
   delete: (id: string) => {
-    return request.delete(`/operation-log/delete/${id}`)
+    return request.delete(`/es-operation-log/delete/${id}`)
   },
   cleanBefore: (time: string): Promise<ApiResponse> => {
-    return request.delete(`operation-log/clean?beforeDate=${time}`)
+    return request.delete(`/es-operation-log/clean?beforeDate=${time}`)
   }
 }
 
