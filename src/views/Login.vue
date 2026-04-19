@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-header">
-        <h2>MOK-后台基础系统</h2>
+        <h2>MOK-基础框架</h2>
         <p>欢迎登录，请填写登录信息</p>
       </div>
 
@@ -460,7 +460,8 @@ onMounted(() => {
 .captcha-img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  //object-fit: contain;
+  object-position: center;  /* 默认就是 center，可省略 */
   display: block;
 }
 

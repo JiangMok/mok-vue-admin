@@ -44,7 +44,8 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'Login',
     component: () => import('@/views/Login.vue'),
     meta: {
-      title: '登录'
+      title: '登录',
+      requiresAuth: false
     }
   },
   {
