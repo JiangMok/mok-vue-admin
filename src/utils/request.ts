@@ -189,7 +189,7 @@ service.interceptors.response.use(
           return handleTokenRefreshAndRetry(originalRequest);
         }
       }
-
+      ElMessage.error(data.msg || '请求失败')
       // 其他业务错误码（如参数错误、权限不足等），在控制台打印错误信息
       console.error('业务错误:', data.msg || '请求失败');
       // 将错误数据 reject 出去，这样调用方可以通过 try...catch 或 .catch() 捕获到

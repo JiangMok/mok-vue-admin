@@ -165,7 +165,7 @@ const userInfo = reactive({
 const rules = {
   nickname: [
     { required: true, message: '请输入昵称', trigger: 'blur' },
-    { min: 2, max: 20, message: '昵称长度在2到20个字符', trigger: 'blur' }
+    { min: 3, max: 20, message: '昵称长度在2到20个字符', trigger: 'blur' }
   ],
   phone: [
     { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' }
@@ -315,7 +315,6 @@ const submitPasswordChange = () => {
       changingPassword.value = true
       // 准备提交数据
       const submitData: UserRequestData = {
-        avatar: "", email: "", phone: "", roleIds: [], status: 0,
         id: userInfo.id,
         username: userInfo.username,
         nickname: userInfo.nickname,

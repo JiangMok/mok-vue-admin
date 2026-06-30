@@ -69,7 +69,7 @@
         @selection-change="handleSelectionChange"
         style="width: 100%"
       >
-<!--        <el-table-column type="selection" width="55"/>-->
+        <!--        <el-table-column type="selection" width="55"/>-->
 
         <el-table-column prop="title" label="操作模块" width=""/>
         <el-table-column prop="businessType" label="业务类型" width=""/>
@@ -116,6 +116,16 @@
             >
               详情
             </el-button>
+
+
+            <el-button
+              type="primary"
+              size="small"
+              @click="openAnalysis(row)"
+            >
+              AI 分析
+            </el-button>
+
             <el-button
               type="danger"
               size="small"
@@ -146,6 +156,10 @@
       :operationLogId="selectedOperationLogId"
       :operation-log-data="operationLogData || undefined"
     />
+    <AiAnalysisDialog
+      v-model="dialogVisible"
+      :analysis-text="currentLogText"
+    />
   </div>
 
 </template>
@@ -156,6 +170,7 @@ import {onMounted, reactive, ref} from "vue";
 import {useUserStore} from "@/stores/user.ts";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {operationLogApi} from "@/api";
+import AiAnalysisDialog from '@/components/common/AiAnalysisDialog.vue'
 // 在你Index.vue 或父组件中
 import OperationLogDetail from './components/OperationLogDetail.vue' // 确保路径正确
 
@@ -214,6 +229,9 @@ const disabledDate = (time: Date) => {
   return false
 }
 const size = ref<'default'>('default')
+
+const dialogVisible = ref(false)
+const currentLogText = ref('')
 //===========================函数---开始==============================
 
 const handleDetail = (row: OperationLog) => {
@@ -242,7 +260,7 @@ const fetchList = async () => {
     }
 
     // 清除空值
-    const cleanParams: Record<string, any> = { ...params }
+    const cleanParams: Record<string, any> = {...params}
     Object.keys(cleanParams).forEach(key => {
       if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
         delete cleanParams[key]
@@ -285,7 +303,11 @@ const handleDelete = async (row: OperationLog) => {
     }
   }
 }
-
+function openAnalysis(row: any) {
+  // 组装需要分析的文本（可根据实际字段调整）
+  currentLogText.value = row.jsonResult
+  dialogVisible.value = true
+}
 //===========================函数---结束==============================
 //===========================分页---开始==============================
 //分页参数
@@ -338,18 +360,17 @@ const cleanBefore = async () => {
       }
     )
     const time = formatDate(timeForm.beforeTime);
-    if(time === ''){
+    if (time === '') {
       ElMessage.error("请选择时间")
       return
     }
     // console.log("时间:",time)
-     const res = await operationLogApi.cleanBefore(time)
-    if(res.code === 200){
+    const res = await operationLogApi.cleanBefore(time)
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       pagination.pageNum = 1
       fetchList()
-    }
-    else{
+    } else {
       ElMessage.error(res.msg)
     }
   } catch (error) {
@@ -424,13 +445,13 @@ const formatDate = (dateString: string) => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 18px;  /* 行间距12px，列间距18px */
-  margin: 0 0 16px 0;  /* 与第二个表单之间保持16px间距 */
+  gap: 12px 18px; /* 行间距12px，列间距18px */
+  margin: 0 0 16px 0; /* 与第二个表单之间保持16px间距 */
 }
 
 /* 第二个搜索表单（清除日期） */
 .search-container .el-form:last-child {
-  margin-bottom: 0;  /* 最后一个表单底部不留外边距 */
+  margin-bottom: 0; /* 最后一个表单底部不留外边距 */
 }
 
 /* 重置表单项的外边距，完全由 gap 控制 */
