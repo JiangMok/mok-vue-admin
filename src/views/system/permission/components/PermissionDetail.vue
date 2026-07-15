@@ -208,12 +208,12 @@ const getParentPermissionName = (parentId: string) => {
   return findPermission(permissionTree.value)
 }
 
-// 获取类型文本
+// 获取类型文本（1=菜单 2=按钮 3=接口）
 const getTypeText = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: '目录',
-    2: '菜单',
-    3: '按钮'
+    1: '菜单',
+    2: '按钮',
+    3: '接口'
   }
   return typeMap[type] || '未知'
 }
@@ -221,7 +221,7 @@ const getTypeText = (type: number) => {
 // 获取类型标签样式
 const getTypeTagType = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: 'primary',
+    1: '',
     2: 'success',
     3: 'warning'
   }

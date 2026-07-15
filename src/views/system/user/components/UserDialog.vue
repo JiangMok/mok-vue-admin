@@ -115,6 +115,19 @@
         </el-radio-group>
       </el-form-item>
 
+      <!-- 所属部门 -->
+      <el-form-item label="所属部门" prop="deptId">
+        <el-tree-select
+          v-model="formData.deptId"
+          :data="deptTree"
+          :props="{ label: 'deptName', value: 'id', children: 'children' }"
+          placeholder="请选择部门"
+          clearable
+          check-strictly
+          style="width: 100%"
+        />
+      </el-form-item>
+
       <!-- 角色（多选） -->
       <el-form-item label="角色" prop="roleIds">
         <el-select
@@ -181,8 +194,8 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import type { RoleItem, UserFormData, UserRequestData } from '@/types'
-import { roleApi, userApi } from '@/api'
+import type { DeptItem, RoleItem, UserFormData, UserRequestData } from '@/types'
+import { deptApi, roleApi, userApi } from '@/api'
 import {useUserStore} from "@/stores/user.ts";
 const userStore = useUserStore()
 // ================== 新增：定义组件属性和事件 ==================
@@ -218,6 +231,7 @@ const formData = reactive<UserFormData>({
   email: '',
   avatar: '',
   status: 1,
+  deptId: '',
   roleIds: []
 })
 
@@ -225,6 +239,8 @@ const formData = reactive<UserFormData>({
 const roleList = ref<RoleItem[]>([])
 const roleLoading = ref(false)
 const statusShow = ref(true)
+// 部门树
+const deptTree = ref<DeptItem[]>([])
 
 // 提交加载状态
 const submitLoading = ref(false)
@@ -354,6 +370,7 @@ const initFormData = async () => {
     formData.email = props.editData.email || ''
     formData.avatar = props.editData.avatar || ''
     formData.status = props.editData.status !== undefined ? props.editData.status : 1
+    formData.deptId = props.editData.deptId || ''
 
     // 显示头像
     if (props.editData.avatar) {
@@ -415,6 +432,7 @@ const resetForm = () => {
     email: '',
     avatar: '',
     status: 1,
+    deptId: '',
     roleIds: []
   })
 }
@@ -434,6 +452,18 @@ const fetchRoleList = async () => {
     ElMessage.error('获取角色列表失败')
   } finally {
     roleLoading.value = false
+  }
+}
+
+// ================== 新增：获取部门树 ==================
+const fetchDeptTree = async () => {
+  try {
+    const res = await deptApi.getScopedTree()
+    if (res.code === 200) {
+      deptTree.value = res.data || []
+    }
+  } catch {
+    // 部门树获取失败不阻塞用户操作
   }
 }
 
@@ -517,6 +547,7 @@ const handleSubmit = async () => {
       email: formData.email,
       avatar: formData.avatar,
       status: formData.status,
+      deptId: formData.deptId,
       roleIds: formData.roleIds
     }
 
@@ -583,9 +614,13 @@ watch(() => props.visible, async (newVal) => {
     // 对话框显示时，初始化数据
     await initFormData()
 
-    // 如果没有所有角色数据，获取角色列表
+    // 如果没有角色数据，获取角色列表
     if (roleList.value.length === 0) {
       await fetchRoleList()
+    }
+    // 如果没有部门树数据，获取部门树
+    if (deptTree.value.length === 0) {
+      await fetchDeptTree()
     }
   }
 })
@@ -600,8 +635,9 @@ onMounted(() => {
     }
   }
 
-  // 提前加载角色列表，提升用户体验
+  // 提前加载角色列表和部门树，提升用户体验
   fetchRoleList()
+  fetchDeptTree()
 })
 </script>
 

@@ -24,6 +24,18 @@
           />
         </el-form-item>
 
+        <el-form-item label="所属部门">
+          <el-tree-select
+            v-model="searchForm.deptId"
+            :data="searchDeptTree"
+            :props="{ label: 'deptName', value: 'id', children: 'children' }"
+            placeholder="请选择部门"
+            clearable
+            check-strictly
+            style="width: 180px"
+          />
+        </el-form-item>
+
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="请选择状态" clearable
                      style="width: 120px">
@@ -63,6 +75,12 @@
         <el-table-column prop="nickname" label="昵称" width="150"/>
         <el-table-column prop="phone" label="手机号" width="130"/>
         <el-table-column prop="email" label="邮箱" width="230"/>
+
+        <el-table-column prop="deptName" label="所属部门" width="120">
+          <template #default="{ row }">
+            {{ row.deptName || '--' }}
+          </template>
+        </el-table-column>
 
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
@@ -158,9 +176,9 @@
 import {onMounted, reactive, ref} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {Plus} from '@element-plus/icons-vue'
-import {userApi} from '@/api'
+import {deptApi, userApi} from '@/api'
 import {useUserStore} from '@/stores/user'
-import type {UserInfo} from '@/types'
+import type {DeptItem, UserInfo} from '@/types'
 import UserDialog from './components/UserDialog.vue'
 import UserDetail from './components/UserDetail.vue'
 import {formatDateTime} from "@/utils/formatter.ts";
@@ -173,6 +191,7 @@ const userList = ref<UserInfo[]>([])
 // 搜索表单
 const searchForm = reactive({
   keyword: '',
+  deptId: '',
   status: undefined
 })
 // 分页参数
@@ -190,6 +209,8 @@ const currentEditData = ref<any>(null)
 const detailDialogVisible = ref(false)
 const selectedUserId = ref('')
 const selectedUserData = ref<UserInfo | null>(null)
+// 搜索栏的部门树（scoped）
+const searchDeptTree = ref<DeptItem[]>([])
 
 //=================页面需要的函数=================================
 /**
@@ -200,10 +221,15 @@ const fetchUserList = async () => {
     loading.value = true
 
     // 构建请求参数
-    const params = {
+    const params: Record<string, any> = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      ...searchForm
+      keyword: searchForm.keyword,
+      status: searchForm.status,
+      params: {} as Record<string, any>
+    }
+    if (searchForm.deptId) {
+      params.params.deptId = searchForm.deptId
     }
     ///相当于
     // const params = {
@@ -247,6 +273,7 @@ const handleSearch = () => {
  */
 const handleReset = () => {
   searchForm.keyword = ''
+  searchForm.deptId = ''
   searchForm.status = undefined
   pagination.pageNum = 1
   fetchUserList()
@@ -380,10 +407,17 @@ const handleDialogSuccess = () => {
   // ElMessage.success('操作成功')
 }
 
+const fetchSearchDeptTree = async () => {
+  try {
+    const res = await deptApi.getScopedTree()
+    if (res.code === 200) searchDeptTree.value = res.data || []
+  } catch { /* ignore */ }
+}
+
 //=================页面加载时的操作(生命周期钩子)============================================
 onMounted(() => {
-  // console.log('用户管理页面加载')
   fetchUserList()
+  fetchSearchDeptTree()
 })
 </script>
 

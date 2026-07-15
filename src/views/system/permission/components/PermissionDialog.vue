@@ -52,9 +52,9 @@
           style="width: 100%"
           @change="handleTypeChange"
         >
-          <el-option label="目录" :value="1" />
-<!--          <el-option label="菜单" :value="2" />-->
-          <el-option label="按钮" :value="3" />
+          <el-option label="菜单" :value="1" />
+          <!-- <el-option label="按钮" :value="2" /> -->
+          <el-option label="接口" :value="3" />
         </el-select>
       </el-form-item>
 
@@ -214,7 +214,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import {Search, ShoppingBag} from '@element-plus/icons-vue'
 import type { PermissionFormData, PermissionItem } from '@/types'
 import { permissionApi } from '@/api'
@@ -254,7 +255,7 @@ const formData = reactive<PermissionFormData>({
   permissionName: '',
   permissionCode: '',
   description: '',
-  type: 1, // 默认目录类型
+  type: 1, // 默认菜单类型
   parentId: '0', // 默认根目录
   icon: '',
   path: '',
@@ -284,19 +285,19 @@ const dialogVisible = computed({
   set: (value) => emit('update:visible', value)
 })
 
-// 根据类型显示不同字段
+// 根据类型显示不同字段（1=菜单 2=按钮 3=接口）
 const showPathField = computed(() => {
-  // 目录和菜单有路由路径，按钮没有
-  return formData.type === 1 || formData.type === 2
+  // 只有菜单有路由路径
+  return formData.type === 1
 })
 
 const showComponentField = computed(() => {
   // 只有菜单有组件路径
-  return formData.type === 2
+  return formData.type === 1
 })
 
-// 表单验证规则 - 根据接口数据调整
-const formRules: FormRules = {
+// 表单验证规则 - 使用 computed 确保 type 变化时动态更新
+const formRules = computed<FormRules>(() => ({
   permissionName: [
     { required: true, message: '请输入权限名称', trigger: 'blur' },
     { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
@@ -316,18 +317,16 @@ const formRules: FormRules = {
     }
   ],
   path: [
-    // 根据类型动态验证
     {
-      required: formData.type === 1 || formData.type === 2,
+      required: true,
       message: '请输入路由路径',
       trigger: 'blur'
     },
     { max: 200, message: '长度不能超过200个字符', trigger: 'blur' }
   ],
   component: [
-    // 根据类型动态验证
     {
-      required: formData.type === 2,
+      required: true,
       message: '请输入组件路径',
       trigger: 'blur'
     },
@@ -346,20 +345,16 @@ const formRules: FormRules = {
   status: [
     { required: true, message: '请选择启用状态', trigger: 'change' }
   ]
-}
+}));
 
-// 类型改变处理
+// 类型改变处理（1=菜单 2=按钮 3=接口）
 const handleTypeChange = (value: number) => {
-  // 根据接口数据，不同类型可能需要清空某些字段
-  if (value === 3) {
-    // 按钮类型：清空路由路径和组件路径（根据接口数据，按钮没有这些字段）
+  if (value !== 1) {
+    // 按钮(2)和接口(3)：清空路由路径和组件路径
     formData.path = ''
     formData.component = ''
-  } else if (value === 1) {
-    // 目录类型：通常有路由路径，可能有组件路径（但根据常规设计，目录没有组件路径）
-    formData.component = ''
   }
-  // 菜单类型（2）：保持现有值
+  // 菜单(1)：保留 path 和 component
 }
 
 // 获取权限列表（用于选择父级）
@@ -397,12 +392,12 @@ const getPermissionDisplayName = (permission: PermissionItem) => {
   return `[${typeText}] ${permission.permissionName} (${permission.permissionCode})`
 }
 
-// 获取类型文本
+// 获取类型文本（1=菜单 2=按钮 3=接口）
 const getTypeText = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: '目录',
-    2: '菜单',
-    3: '按钮'
+    1: '菜单',
+    2: '按钮',
+    3: '接口'
   }
   return typeMap[type] || '未知'
 }
@@ -410,7 +405,7 @@ const getTypeText = (type: number) => {
 // 获取类型标签样式
 const getTypeTagType = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: 'primary',
+    1: '',
     2: 'success',
     3: 'warning'
   }
@@ -610,19 +605,5 @@ onMounted(() => {
   font-size: 12px;
   color: #999;
   margin-top: 4px;
-}
-.icon-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-}
-
-.icon-name {
-  font-size: 12px;
-  color: #666;
 }
 </style>

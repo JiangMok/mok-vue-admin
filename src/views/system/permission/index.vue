@@ -25,9 +25,9 @@
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="searchForm.params.type" placeholder="请选择类型" clearable style="width: 200px">
-            <el-option label="目录" :value="1" />
-<!--            <el-option label="菜单" :value="2" />-->
-            <el-option label="按钮" :value="3" />
+            <el-option label="菜单" :value="1" />
+            <!-- <el-option label="按钮" :value="2" /> -->
+            <el-option label="接口" :value="3" />
           </el-select>
         </el-form-item>
 <!--        <el-form-item label="状态">-->
@@ -57,13 +57,13 @@
           <template #default="{ row }">
             <div class="permission-name-cell">
               <el-icon v-if="row.type === 1" class="type-icon">
-                <Folder />
-              </el-icon>
-              <el-icon v-else-if="row.type === 2" class="type-icon">
                 <Menu />
               </el-icon>
-              <el-icon v-else class="type-icon">
+              <el-icon v-else-if="row.type === 2" class="type-icon">
                 <Operation />
+              </el-icon>
+              <el-icon v-else class="type-icon">
+                <Link />
               </el-icon>
               {{ row.permissionName }}
             </div>
@@ -187,7 +187,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Folder, Menu, Operation } from '@element-plus/icons-vue'
+import { Plus, Menu, Operation, Link } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user.ts'
 import type { PermissionItem } from '@/types'
 import { permissionApi } from '@/api'
@@ -339,12 +339,12 @@ const handlePageChange = (page: number) => {
   fetchList()
 }
 
-// 获取类型文本
+// 获取类型文本（1=菜单 2=按钮 3=接口）
 const getTypeText = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: '目录',
-    2: '菜单',
-    3: '按钮'
+    1: '菜单',
+    2: '按钮',
+    3: '接口'
   }
   return typeMap[type] || '未知'
 }
@@ -352,7 +352,7 @@ const getTypeText = (type: number) => {
 // 获取类型标签样式
 const getTypeTagType = (type: number) => {
   const typeMap: Record<number, string> = {
-    1: 'primary',
+    1: '',
     2: 'success',
     3: 'warning'
   }

@@ -6,6 +6,7 @@ import type {
   CouponFormData,
   CouponItem,
   DeliveryOrderEntity,
+  DeptItem,
   FileItem,
   FileUploadResponse,
   LoginParams,
@@ -184,6 +185,45 @@ export const roleApi = {
   }
 }
 
+
+/**
+ * 部门管理API
+ */
+export const deptApi = {
+  // 获取部门树（全部）
+  getTree: (): Promise<ApiResponse<DeptItem[]>> => {
+    return request.get('/dept/tree')
+  },
+  // 获取部门范围树（当前用户的部门+子部门，管理员看全部）
+  getScopedTree: (): Promise<ApiResponse<DeptItem[]>> => {
+    return request.get('/dept/tree/scoped')
+  },
+  // 分页查询
+  getPage: (params: {
+    pageNum: number
+    pageSize: number
+    keyword?: string
+    status?: number
+  }): Promise<ApiResponse<PageResponse<DeptItem>>> => {
+    return request.post('/dept/list', params)
+  },
+  // 获取详情
+  getById: (id: string): Promise<ApiResponse<DeptItem>> => {
+    return request.get(`/dept/${id}`)
+  },
+  // 新增
+  add: (data: Partial<DeptItem>) => {
+    return request.post('/dept/add', data)
+  },
+  // 更新
+  update: (data: Partial<DeptItem>) => {
+    return request.put('/dept/update', data)
+  },
+  // 删除
+  delete: (id: string) => {
+    return request.delete(`/dept/delete/${id}`)
+  }
+}
 
 /**
  * 系统信息API

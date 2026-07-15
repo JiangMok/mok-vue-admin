@@ -38,6 +38,7 @@ export interface LoginResponse {
 export interface ProfileUserInfo{
   roleIds :string []
   user : UserInfo
+  deptName?: string
 }
 
 //用户信息
@@ -49,6 +50,8 @@ export interface UserInfo {
   email: string
   avatar: string | null
   status: number
+  deptId?: string
+  deptName?: string
   createTime: string
   updateTime: string
 }
@@ -132,6 +135,7 @@ export interface UserFormData {
   email: string
   avatar: string
   status: number
+  deptId: string
   roleIds: string[]
 }
 
@@ -146,10 +150,30 @@ export interface UserRequestData {
   email: string
   avatar: string
   status: number
+  deptId?: string
   roleIds: string[]
 }
 
 //操作日志类型
+// ================== 部门类型定义 ==================
+export interface DeptItem {
+  id: string
+  deptName: string
+  deptCode: string
+  parentId: string
+  ancestors: string
+  description: string
+  leader: string
+  phone: string
+  email: string
+  sort: number
+  status: number
+  children?: DeptItem[]
+  createBy?: string
+  createTime?: string
+  updateTime?: string
+}
+
 export interface OperationLog {
   id: string
   title: string

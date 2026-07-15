@@ -42,6 +42,10 @@
             {{ userInfo?.email || '--' }}
           </el-descriptions-item>
 
+          <el-descriptions-item label="所属部门" label-class-name="label-class">
+            {{ userInfo?.deptName || detailDeptName || '--' }}
+          </el-descriptions-item>
+
           <el-descriptions-item label="创建时间" label-class-name="label-class" :span="2">
             {{ formatDateTime(userInfo?.createTime) || '--' }}
           </el-descriptions-item>
@@ -156,6 +160,7 @@ const userStore = useUserStore()
 const loading = ref(false)
 const userInfo = ref<UserInfo | null>(null)
 const roles = ref<RoleItem[]>([])
+const detailDeptName = ref('')
 
 // 计算对话框是否可见
 const dialogVisible = computed({
@@ -169,13 +174,15 @@ const fetchUserDetail = async () => {
   // 如果有传入的用户数据，直接使用
   if (props.userData) {
     userInfo.value = props.userData
+    detailDeptName.value = props.userData.deptName || ''
   } else if (props.userId) {
     // 否则根据用户ID获取详情
     try {
       loading.value = true
       const res = await userApi.getUserById(props.userId)
       if (res.code === 200) {
-        userInfo.value = res.data
+        userInfo.value = res.data.user || res.data
+        detailDeptName.value = res.data.deptName || ''
       } else {
         ElMessage.error(res.msg || '获取用户详情失败')
       }
