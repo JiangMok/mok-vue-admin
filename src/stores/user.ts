@@ -197,7 +197,9 @@ export const useUserStore = defineStore('user', {
         console.error('退出登录失败:', error)
       } finally {
         this.clear()
-        localStorage.clear()
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userInfo')
         window.location.reload()
       }
     },

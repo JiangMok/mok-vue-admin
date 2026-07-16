@@ -1,31 +1,40 @@
 <template>
   <div class="layout-container">
     <!-- 顶部导航栏 -->
-    <div class="header">
+    <header class="header">
       <div class="header-left">
         <div class="logo">
-          <h2>后台管理系统</h2>
+          <el-icon :size="22" color="#5b7fbc"><Monitor /></el-icon>
+          <h2>MOK 后台管理</h2>
         </div>
       </div>
-      <div class="header-center">
-        <!-- 时间显示（带图标） -->
-        <el-tooltip content="点击同步时间" placement="bottom">
-          <div class="time-display" @click="updateTime">
-            <span>{{ currentTime }}</span>
+
+      <div class="header-actions">
+        <el-tooltip content="刷新当前页面" placement="bottom">
+          <div class="action-btn" @click="refreshCurrentPage">
+            <el-icon :size="16" :class="{ 'is-spinning': isRefreshing }">
+              <RefreshRight />
+            </el-icon>
           </div>
         </el-tooltip>
-
-        <!-- 其他功能（通知、全屏等）可以放在这里 -->
       </div>
+
+      <div class="header-center">
+        <div class="time-display" @click="updateTime">
+          <el-icon :size="14"><Clock /></el-icon>
+          <span>{{ currentTime }}</span>
+        </div>
+      </div>
+
       <div class="header-right">
         <el-dropdown @command="handleCommand">
-          <span class="user-info">
+          <div class="user-info">
             <el-avatar :src="avatar" :size="32">
               {{ nickname?.charAt(0) || username?.charAt(0) || 'U' }}
             </el-avatar>
             <span class="username">{{ nickname }}</span>
-            <el-icon><ArrowDown /></el-icon>
-          </span>
+            <el-icon :size="12"><ArrowDown /></el-icon>
+          </div>
 
           <template #dropdown>
             <el-dropdown-menu>
@@ -35,42 +44,30 @@
           </template>
         </el-dropdown>
       </div>
-    </div>
+    </header>
 
     <div class="main-container">
       <!-- 左侧菜单 -->
-      <div class="sidebar" v-if="hasMenu">
+      <aside class="sidebar" v-if="hasMenu">
         <el-menu
           :default-active="activeMenu"
           :router="true"
-          background-color="#304156"
-          text-color="#bfcbd9"
-          active-text-color="#409eff"
+          background-color="transparent"
+          text-color="#94a3b8"
+          active-text-color="#e2e8f0"
         >
-          <!-- 递归渲染菜单 -->
           <menu-item
             v-for="menu in menus"
             :key="menu.id"
             :menu="menu"
           />
         </el-menu>
-      </div>
+      </aside>
 
-      <!-- 右侧内容区域 -->
-      <div class="content" :class="{ 'no-sidebar': !hasMenu }">
-        <!-- 内容头部（面包屑）可保留，也可移入标签栏上方 -->
-        <div class="content-header" v-if="false"> <!-- 可选隐藏，由标签栏替代 -->
-          <div class="breadcrumb">
-            <el-breadcrumb separator="/">
-              <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-              <el-breadcrumb-item>{{ currentRoute.meta?.title }}</el-breadcrumb-item>
-            </el-breadcrumb>
-          </div>
-        </div>
-        <!-- 标签栏 -->
+      <!-- 右侧内容 -->
+      <main class="content" :class="{ 'no-sidebar': !hasMenu }">
         <TabsView />
         <div class="content-body">
-          <!-- 路由出口 -->
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <keep-alive :include="cachedTabs">
@@ -79,7 +76,7 @@
             </transition>
           </router-view>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
@@ -87,57 +84,28 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Clock, Monitor, RefreshRight } from '@element-plus/icons-vue'
 import MenuItem from '@/components/MenuItem.vue'
 import { useUserStore } from '@/stores/user'
 import { useTabsStore } from '@/stores/tabs'
 import TabsView from '@/components/TabsView.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Clock } from '@element-plus/icons-vue' // 引入时钟图标
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const tabsStore = useTabsStore()
 
-// 需要缓存的组件列表
 const cachedTabs = computed(() => tabsStore.cachedTabs)
+const activeMenu = computed(() => route.path)
+const currentRoute = computed(() => route)
+const menus = computed(() => userStore.menus)
+const hasMenu = computed(() => menus.value && menus.value.length > 0)
 
-// 当前激活的菜单
-const activeMenu = computed(() => {
-  return route.path
-})
+const nickname = computed(() => userStore.nickname || '用户')
+const username = computed(() => userStore.nickname || '用户')
+const avatar = computed(() => userStore.avatar)
 
-// 当前路由信息
-const currentRoute = computed(() => {
-  return route
-})
-
-// 菜单数据
-const menus = computed(() => {
-  // console.log('Layout获取菜单:', userStore.menus)
-  return userStore.menus
-})
-
-// 是否有菜单显示
-const hasMenu = computed(() => {
-  return menus.value && menus.value.length > 0
-})
-
-// 用户昵称
-const nickname = computed(() => {
-  return userStore.nickname || '用户'
-})
-
-const username = computed(() => {
-  return userStore.nickname || '用户'
-})
-
-const avatar = computed(() => {
-  return userStore.avatar
-})
-
-// 下拉菜单命令处理
 const handleCommand = async (command: string) => {
   if (command === 'logout') {
     await userStore.logout()
@@ -146,7 +114,22 @@ const handleCommand = async (command: string) => {
     router.push('/profile')
   }
 }
-// 监听路由变化，自动添加标签
+
+// 刷新当前页面
+const isRefreshing = ref(false)
+const refreshCurrentPage = () => {
+  const currentRoute = router.currentRoute.value
+  // 通过追加 _t 时间戳改变 fullPath，触发 keep-alive 组件重新渲染
+  const newQuery = { ...currentRoute.query, _t: Date.now() }
+  router.replace({ path: currentRoute.path, query: newQuery })
+
+  // 旋转动画
+  isRefreshing.value = true
+  setTimeout(() => {
+    isRefreshing.value = false
+  }, 600)
+}
+
 watch(
   () => route.fullPath,
   () => {
@@ -154,22 +137,11 @@ watch(
   },
   { immediate: true }
 )
-// 监听路由变化
-// watch(() => route.path, (newPath) => {
-//   console.log('路由变化:', newPath)
-// })
 
-// onMounted(() => {
-//   console.log('布局组件加载完成')
-//   console.log('当前菜单:', menus.value)
-//   console.log('当前路由:', route.path)
-//   console.log('用户是否登录:', userStore.isLoggedIn)
-// })
-// 当前时间显示（包含星期）
+// 当前时间
 const currentTime = ref('')
-let timer: NodeJS.Timer
+let timer: ReturnType<typeof setInterval>
 
-// 格式化日期时间：YYYY年MM月DD日 星期X HH:MM:SS
 const formatDateTime = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -190,7 +162,6 @@ onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
   tabsStore.closeAllTabs()
-  // 3. 如果当前不在首页，则跳转到首页
   if (route.path !== '/') {
     router.push('/')
   }
@@ -202,73 +173,114 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ===== 布局容器 - 纯浅色渐变背景（无动画、无光斑） ===== */
+/* ===================================================================
+   Layout — "Precision Console"
+   深色顶栏+侧边栏 → 高对比度，让内容区成为焦点
+   =================================================================== */
+
 .layout-container {
   height: 100vh;
-  overflow: hidden; /* 禁止浏览器滚动条，所有滚动在内部处理 */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(145deg, #eef2f6, #d9e2ef, #f0f4fa, #e6ecf5);
-  color: #1e2b3a;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
-/* ===== 顶部导航栏 ===== */
+/* ---- Header ---- */
 .header {
-  height: 64px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  height: 56px;
+  min-height: 56px;
+  background: var(--app-bg-dark);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 20px;
   z-index: 100;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Logo */
+.header-left .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .header-left .logo h2 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #7b9cff, #b08cff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 1px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
-/* 中间区域（时间显示） */
+/* 顶栏操作按钮 */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.action-btn:active {
+  transform: scale(0.92);
+}
+
+.is-spinning {
+  animation: spin 0.6s ease;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 时间显示 */
 .header-center {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
 }
 
 .time-display {
-  font-size: 16px;
-  color: #1e2b3a;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 8px 20px;
-  border-radius: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  font-family: var(--font-mono);
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.3px;
 }
 
 .time-display:hover {
-  background: #ffffff;
-  border-color: #7b9cff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(123, 156, 255, 0.2);
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-/* 右侧用户信息 */
+/* 用户信息 */
 .header-right {
   display: flex;
   align-items: center;
@@ -277,192 +289,188 @@ onUnmounted(() => {
 .user-info {
   display: flex;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
-  gap: 10px;
-  padding: 4px 12px 4px 8px;
-  border-radius: 40px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  padding: 4px 10px 4px 6px;
+  border-radius: 8px;
+  transition: all var(--transition-fast);
+  color: #cbd5e1;
 }
 
 .user-info:hover {
-  background: #ffffff;
-  border-color: #b08cff;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
 }
 
 .username {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #1e2b3a;
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 头像 */
-:deep(.el-avatar) {
-  background: linear-gradient(135deg, #7b9cff, #b08cff);
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  color: white;
+:deep(.header .el-avatar) {
+  background: var(--app-accent);
+  color: #fff;
   font-weight: 600;
+  font-size: 13px;
 }
 
-/* 下拉菜单图标 */
-.user-info .el-icon {
-  color: #7f8c8d;
-  font-size: 14px;
-  transition: transform 0.2s;
-}
-
-.user-info:hover .el-icon {
-  transform: rotate(180deg);
-  color: #b08cff;
-}
-
-/* ===== 主容器 ===== */
+/* ---- Main Container ---- */
 .main-container {
   flex: 1;
   display: flex;
-  overflow: hidden; /* 防止内部溢出产生浏览器滚动条 */
+  overflow: hidden;
 }
 
-/* ===== 左侧菜单 ===== */
+/* ---- Sidebar ---- */
 .sidebar {
-  width: 240px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(255, 255, 255, 0.8);
-  overflow-y: auto; /* 菜单过多时内部滚动 */
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
+  width: 232px;
+  min-width: 232px;
+  background: var(--app-bg-sidebar);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Element Plus 菜单覆盖 - 浅色主题 */
-:deep(.el-menu) {
+/* ---- Menu Overrides ---- */
+:deep(.sidebar .el-menu) {
   border-right: none !important;
   background: transparent !important;
+  padding: 8px 0;
 }
 
-:deep(.el-menu-item) {
-  height: 50px;
-  line-height: 50px;
-  color: #5a6a7a !important;
+:deep(.sidebar .el-menu-item) {
+  height: 44px;
+  line-height: 44px;
+  color: #94a3b8 !important;
   background: transparent !important;
-  border-left: 3px solid transparent;
-  transition: all 0.2s;
-  margin: 4px 8px;
-  border-radius: 8px;
+  margin: 2px 8px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  padding-left: 16px !important;
 }
 
-:deep(.el-menu-item.is-active) {
-  color: #7b9cff !important;
-  background: linear-gradient(90deg, rgba(123, 156, 255, 0.1), transparent) !important;
-  border-left-color: #7b9cff;
+:deep(.sidebar .el-menu-item:hover) {
+  color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
-:deep(.el-menu-item:hover) {
-  color: #1e2b3a !important;
-  background: rgba(255, 255, 255, 0.8) !important;
+:deep(.sidebar .el-menu-item.is-active) {
+  color: #e2e8f0 !important;
+  background: rgba(59, 89, 152, 0.25) !important;
+  font-weight: 500;
 }
 
-:deep(.el-sub-menu__title) {
-  color: #5a6a7a !important;
+:deep(.sidebar .el-sub-menu__title) {
+  color: #94a3b8 !important;
   background: transparent !important;
-  height: 50px;
-  line-height: 50px;
-  border-radius: 8px;
-  margin: 4px 8px;
+  height: 44px;
+  line-height: 44px;
+  margin: 2px 8px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  padding-left: 16px !important;
 }
 
-:deep(.el-sub-menu__title:hover) {
-  color: #1e2b3a !important;
-  background: rgba(255, 255, 255, 0.8) !important;
+:deep(.sidebar .el-sub-menu__title:hover) {
+  color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
-:deep(.el-menu--inline) {
-  background: rgba(0, 0, 0, 0.02) !important;
+:deep(.sidebar .el-sub-menu.is-active > .el-sub-menu__title) {
+  color: #e2e8f0 !important;
 }
 
-:deep(.el-menu-item .el-icon),
-:deep(.el-sub-menu .el-icon) {
+:deep(.sidebar .el-menu--inline) {
+  background: rgba(0, 0, 0, 0.15) !important;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+:deep(.sidebar .el-menu-item .el-icon),
+:deep(.sidebar .el-sub-menu .el-icon) {
   color: inherit;
+  font-size: 16px;
 }
 
-/* 滚动条美化 - 浅色 */
+/* Sidebar scrollbar */
 .sidebar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 .sidebar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-}
-.sidebar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
 
-/* ===== 右侧内容区域 ===== */
+/* ---- Content Area ---- */
 .content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止内容溢出产生浏览器滚动条 */
-  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  background: var(--app-bg);
 }
 
-/* 标签栏区域（TabsView 样式穿透） */
-:deep(.tabs-view) {
-  background: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
-  padding: 4px 16px 0;
+.content.no-sidebar {
+  /* full width when no menu */
 }
 
-:deep(.tabs-view .el-tabs__header) {
+/* ---- Tabs Bar ---- */
+:deep(.tabs-container) {
+  background: var(--app-bg-surface) !important;
+  border-bottom: 1px solid var(--app-border) !important;
+  padding: 0 12px;
+}
+
+:deep(.tabs-container .el-tabs__header) {
   margin: 0 !important;
   border-bottom: none !important;
 }
 
-:deep(.tabs-view .el-tabs__nav-wrap::after) {
+:deep(.tabs-container .el-tabs__nav-wrap::after) {
   display: none;
 }
 
-:deep(.tabs-view .el-tabs__item) {
-  color: #5a6a7a !important;
-  height: 40px;
-  line-height: 40px;
-  border-radius: 20px 20px 0 0;
-  transition: all 0.2s;
+:deep(.tabs-container .el-tabs__item) {
+  color: var(--app-text-secondary) !important;
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: all var(--transition-fast);
+  border: none !important;
 }
 
-:deep(.tabs-view .el-tabs__item.is-active) {
-  color: #7b9cff !important;
-  background: rgba(123, 156, 255, 0.1);
+:deep(.tabs-container .el-tabs__item.is-active) {
+  color: var(--app-accent) !important;
+  font-weight: 600;
+  background: var(--app-accent-light);
 }
 
-:deep(.tabs-view .el-tabs__item:hover) {
-  color: #1e2b3a !important;
-  background: rgba(255, 255, 255, 0.8);
+:deep(.tabs-container .el-tabs__item:hover) {
+  color: var(--app-text) !important;
+  background: var(--app-bg-elevated);
 }
 
-:deep(.tabs-view .el-tabs__active-bar) {
-  background: linear-gradient(90deg, #7b9cff, #b08cff);
-  height: 3px;
+:deep(.tabs-container .el-tabs__active-bar) {
+  background: var(--app-accent);
+  height: 2px;
 }
 
-/* 内容主体 - 允许内部滚动 */
+/* ---- Content Body ---- */
 .content-body {
   flex: 1;
-  padding: 20px;
-  overflow-y: auto; /* 只有这里可以滚动，不会触发浏览器滚动条 */
-  background: transparent;
+  overflow-y: auto;
+  background: var(--app-bg);
 }
 
-/* 路由过渡动画 */
+/* ---- Route Transition ---- */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,
@@ -470,45 +478,33 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* 隐藏原面包屑 */
-.content-header {
-  display: none;
-}
-
-/* 无菜单时的内容区域 */
-.content.no-sidebar {
-  margin-left: 0;
-}
-
-/* ===== 响应式调整 ===== */
+/* ---- Responsive ---- */
 @media (max-width: 768px) {
   .header {
-    padding: 0 16px;
+    padding: 0 12px;
   }
 
   .header-left .logo h2 {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .time-display {
-    font-size: 14px;
-    padding: 6px 12px;
+    font-size: 12px;
+    padding: 4px 8px;
   }
 
   .username {
-    max-width: 80px;
+    max-width: 60px;
   }
 
   .sidebar {
     width: 200px;
+    min-width: 200px;
   }
 }
 
 @media (max-width: 576px) {
-  .username {
-    display: none;
-  }
-
+  .username,
   .time-display {
     display: none;
   }

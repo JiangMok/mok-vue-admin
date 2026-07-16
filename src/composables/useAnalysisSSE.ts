@@ -42,20 +42,21 @@ export function useAnalysisSSE() {
         const lines = partialLine.split('\n')
         partialLine = lines.pop() || '' // 保留最后不完整行
         for (const line of lines) {
-          // console.log("========== "+line.slice(5).trim())
-          const data = line.slice(5).trim()
-          if (data === '[DONE]') return
-          content.value += data
-          // console.log('==== data', data)
-          // console.log('>>>> content.value:', content.value)
-          // if (line.startsWith('data: ')) {
-          //   // const data = line.slice(5).trim()
-          //   const data = line.slice(5).trim()
-          //   if (data === '[DONE]') return
-          //   content.value += data
-          //   console.log('==== data', data)
-          //   console.log('>>>> content.value:', content.value)
-          // }
+          if (!line.startsWith('data:')) continue
+
+          // 去掉 "data:" 前缀，再处理可选的前导空格
+          let data = line.slice(5)
+          if (data.startsWith(' ')) data = data.slice(1)
+
+          // 结束信号
+          if (data.trim() === '[DONE]') return
+
+          // 空 data 行 → 保留为换行，维持段落分隔
+          if (data === '') {
+            content.value += '\n'
+          } else {
+            content.value += data
+          }
         }
       }
     } catch (err: any) {

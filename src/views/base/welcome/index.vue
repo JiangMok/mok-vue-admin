@@ -2,41 +2,48 @@
 <template>
   <div class="welcome-container">
     <div class="welcome-content">
-      <!-- 欢迎标题 -->
       <div class="welcome-header">
-        <el-icon size="80" color="#409eff" class="welcome-icon">
+        <el-icon size="64" color="#3b5998" class="welcome-icon">
           <HomeFilled />
         </el-icon>
-        <h1 class="welcome-title">欢迎使用后台管理系统</h1>
-        <p class="welcome-subtitle">Welcome to Background Management System</p>
+        <h1 class="welcome-title">欢迎使用 MOK 后台管理系统</h1>
+        <p class="welcome-subtitle">请从左侧菜单选择功能模块</p>
       </div>
 
-      <!-- 核心信息展示 -->
       <div class="welcome-body">
-        <el-row :gutter="30" class="info-cards">
+        <el-row :gutter="24" class="info-cards">
           <el-col :span="8" v-for="card in infoCards" :key="card.title">
             <div class="info-card">
               <div class="card-icon">
-                <component :is="card.icon" :size="40" :color="card.color" />
+                <component :is="card.icon" :size="32" :color="card.color" />
               </div>
               <div class="card-content">
                 <h3>{{ card.title }}</h3>
-                <p class="card-value">{{ card.value }}</p>
+                <p class="card-value mono">{{ card.value }}</p>
                 <p class="card-desc">{{ card.desc }}</p>
               </div>
             </div>
           </el-col>
         </el-row>
 
-        <!-- 欢迎信息 -->
         <div class="welcome-message">
           <h3>欢迎回来，{{ userName }}！</h3>
-          <p>当前时间：{{ currentTime }}</p>
-          <p>登录IP：{{ loginIP }}</p>
-          <p>系统版本：v1.0.0</p>
+          <div class="message-grid">
+            <div class="message-item">
+              <span class="msg-label">当前时间</span>
+              <span class="msg-value mono">{{ currentTime }}</span>
+            </div>
+            <div class="message-item">
+              <span class="msg-label">登录 IP</span>
+              <span class="msg-value mono">{{ loginIP }}</span>
+            </div>
+            <div class="message-item">
+              <span class="msg-label">系统版本</span>
+              <span class="msg-value">v1.0.0</span>
+            </div>
+          </div>
         </div>
 
-        <!-- 快速入口 -->
         <div class="quick-links">
           <el-button
             v-for="link in quickLinks"
@@ -52,10 +59,8 @@
         </div>
       </div>
 
-      <!-- 底部提示 -->
       <div class="welcome-footer">
-        <p>请从左侧菜单选择功能模块开始使用</p>
-        <p class="copyright">© 2026 后台管理系统</p>
+        <p class="copyright">© 2026 MOK 后台管理系统</p>
       </div>
     </div>
   </div>
@@ -76,37 +81,33 @@ import {
 const router = useRouter()
 const userStore = useUserStore()
 
-// 当前时间
 const currentTime = ref('')
-// 登录IP
 const loginIP = ref('192.168.1.100')
 
-// 信息卡片数据
 const infoCards = [
   {
     title: '用户总数',
     value: '128',
     desc: '注册用户数',
     icon: UserFilled,
-    color: '#409eff'
+    color: '#3b5998'
   },
   {
     title: '在线用户',
     value: '24',
     desc: '当前在线数',
     icon: User,
-    color: '#67c23a'
+    color: '#16a34a'
   },
   {
     title: '待办任务',
     value: '12',
     desc: '未处理任务',
     icon: Bell,
-    color: '#e6a23c'
+    color: '#d97706'
   }
 ]
 
-// 快速链接
 const quickLinks = [
   {
     label: '用户管理',
@@ -128,12 +129,10 @@ const quickLinks = [
   }
 ]
 
-// 获取用户名称
 const userName = computed(() => {
-  return userStore.nickname || userStore.userInfo?.username || '尊敬的访客'
+  return userStore.nickname || userStore.userInfo?.username || '访客'
 })
 
-// 更新时间函数
 const updateTime = () => {
   const now = new Date()
   currentTime.value = now.toLocaleString('zh-CN', {
@@ -146,76 +145,65 @@ const updateTime = () => {
   })
 }
 
-// 跳转函数
 const goToLink = (path: string) => {
   router.push(path)
 }
 
-// 生命周期钩子
 onMounted(() => {
   updateTime()
-  // 每分钟更新一次时间
   const timer = setInterval(updateTime, 60000)
   onUnmounted(() => clearInterval(timer))
-
-  // 模拟获取IP
   loginIP.value = `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
 })
 </script>
 
 <style scoped>
 .welcome-container {
-  height: calc(100vh - 140px); /* 减去顶部导航和面包屑的高度 */
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
-  overflow: hidden; /* 禁止滚动 */
+  padding: 40px 20px;
+  background: var(--app-bg);
 }
 
 .welcome-content {
   width: 100%;
-  max-width: 1000px;
+  max-width: 800px;
   text-align: center;
 }
 
 .welcome-header {
-  margin-bottom: 50px;
-}
-
-.welcome-icon {
-  margin-bottom: 20px;
-}
-
-.welcome-title {
-  font-size: 32px;
-  color: #333;
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-
-.welcome-subtitle {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 0;
-}
-
-.welcome-body {
   margin-bottom: 40px;
 }
 
-/* 信息卡片 */
+.welcome-icon {
+  margin-bottom: 16px;
+}
+
+.welcome-title {
+  font-size: 28px;
+  color: var(--app-text);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.welcome-subtitle {
+  font-size: 15px;
+  color: var(--app-text-muted);
+}
+
+/* Info Cards */
 .info-cards {
-  margin-bottom: 50px;
+  margin-bottom: 32px;
 }
 
 .info-card {
-  background: white;
-  border-radius: 16px;
-  padding: 30px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: var(--app-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px;
+  border: 1px solid var(--app-border);
+  transition: all var(--transition-fast);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -223,127 +211,122 @@ onMounted(() => {
 }
 
 .info-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .card-icon {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .card-content h3 {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--app-text-muted);
+  margin-bottom: 6px;
   font-weight: 500;
 }
 
 .card-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--app-text);
+  margin-bottom: 4px;
+}
+
+.mono {
+  font-family: var(--font-mono);
 }
 
 .card-desc {
-  font-size: 14px;
-  color: #999;
+  font-size: 12px;
+  color: var(--app-text-muted);
 }
 
-/* 欢迎信息 */
+/* Welcome Message */
 .welcome-message {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  margin-bottom: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: var(--app-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  margin-bottom: 32px;
+  border: 1px solid var(--app-border);
 }
 
 .welcome-message h3 {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 20px;
+  font-size: 18px;
+  color: var(--app-text);
+  margin-bottom: 16px;
   font-weight: 600;
 }
 
-.welcome-message p {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 10px;
+.message-grid {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
 }
 
-.welcome-message p:last-child {
-  margin-bottom: 0;
+.message-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* 快速链接 */
+.msg-label {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.msg-value {
+  font-size: 14px;
+  color: var(--app-text);
+  font-weight: 500;
+}
+
+/* Quick Links */
 .quick-links {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
 .link-btn {
-  padding: 15px 30px;
-  font-size: 16px;
-  border-radius: 10px;
-  min-width: 150px;
-}
-
-/* 底部 */
-.welcome-footer {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e4e7ed;
-}
-
-.welcome-footer p {
-  color: #999;
+  padding: 12px 28px;
   font-size: 14px;
-  margin-bottom: 5px;
+  border-radius: var(--radius);
+  min-width: 140px;
 }
 
-.welcome-footer .copyright {
+/* Footer */
+.welcome-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-border);
+}
+
+.copyright {
   font-size: 12px;
-  color: #bbb;
-  margin-top: 10px;
+  color: var(--app-text-muted);
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
-  .welcome-container {
-    height: calc(100vh - 120px);
-    padding: 15px;
-  }
-
   .welcome-title {
-    font-size: 24px;
-  }
-
-  .welcome-subtitle {
-    font-size: 16px;
-  }
-
-  .info-cards {
-    margin-bottom: 30px;
+    font-size: 22px;
   }
 
   .info-card {
-    padding: 20px 15px;
-    margin-bottom: 15px;
+    padding: 20px 16px;
+    margin-bottom: 12px;
   }
 
   .card-value {
-    font-size: 28px;
+    font-size: 24px;
   }
 
-  .welcome-message {
-    padding: 20px;
-  }
-
-  .welcome-message h3 {
-    font-size: 20px;
+  .message-grid {
+    flex-direction: column;
+    gap: 12px;
   }
 
   .quick-links {
@@ -353,16 +336,7 @@ onMounted(() => {
 
   .link-btn {
     width: 100%;
-    max-width: 300px;
+    max-width: 280px;
   }
-}
-
-/* 确保内容不超出容器 */
-.welcome-content,
-.welcome-header,
-.welcome-body,
-.welcome-footer {
-  max-width: 100%;
-  overflow: hidden;
 }
 </style>

@@ -5,9 +5,7 @@
       <div class="header-actions">
         <el-button type="primary" @click="handleAdd"
                    v-if="userStore.hasPermission('system:user:add')">
-          <el-icon>
-            <Plus/>
-          </el-icon>
+          <el-icon><Plus/></el-icon>
           新增用户
         </el-button>
       </div>
@@ -62,8 +60,6 @@
         @selection-change="handleSelectionChange"
         style="width: 100%"
       >
-<!--        <el-table-column type="selection" width="55"/>-->
-
         <el-table-column prop="username" label="用户名" width="160"/>
         <el-table-column prop="avatar" label="头像" width="65">
           <template #default="{ row }">
@@ -74,7 +70,7 @@
         </el-table-column>
         <el-table-column prop="nickname" label="昵称" width="150"/>
         <el-table-column prop="phone" label="手机号" width="130"/>
-        <el-table-column prop="email" label="邮箱" width="230"/>
+        <el-table-column prop="email" label="邮箱" width="200"/>
 
         <el-table-column prop="deptName" label="所属部门" width="120">
           <template #default="{ row }">
@@ -84,19 +80,19 @@
 
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" effect="plain">
               {{ row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="createTime" label="创建时间">
+        <el-table-column prop="createTime" width="160" label="创建时间">
           <template #default="{ row }">
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="340" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -106,7 +102,6 @@
             >
               编辑
             </el-button>
-
             <el-button
               type="primary"
               size="small"
@@ -148,20 +143,14 @@
         @current-change="handlePageChange"
       />
     </div>
+
     <UserDialog
       v-model:visible="dialogVisible"
       :is-edit="isEditMode"
       :edit-data="currentEditData"
       @success="handleDialogSuccess"
     />
-    <!-- ================== 新增：用户详情对话框 ================== -->
-    <!-- :user-data="selectedUserData" 完整写法是 v-bind:user-data -->
-    <!--    它表示将 selectedUserData 这个变量动态绑定到子组件的 userData 属性上-->
-    <!--    这是一个单向数据流：父组件的 selectedUserData 变化时，会自动传递给子组件-->
-    <!--============-->
-    <!-- @edit 是 Vue 中监听子组件自定义事件的语法，它是 v-on:edit 的简写形式。-->
-    <!--    @edit="handleEditFromDetail"-->
-    <!--    表示监听 UserDetail 组件内部触发的名为 edit 的事件。-->
+
     <UserDetail
       v-model:visible="detailDialogVisible"
       :userId="selectedUserId"
@@ -169,7 +158,6 @@
       @edit="handleEditFromDetail"
     />
   </div>
-
 </template>
 
 <script setup lang="ts">
@@ -182,45 +170,32 @@ import type {DeptItem, UserInfo} from '@/types'
 import UserDialog from './components/UserDialog.vue'
 import UserDetail from './components/UserDetail.vue'
 import {formatDateTime} from "@/utils/formatter.ts";
-//================基础对象创建   &   表单基础赋值===============================================
+
 const userStore = useUserStore()
-// 加载状态
 const loading = ref(false)
-// 用户列表数据
 const userList = ref<UserInfo[]>([])
-// 搜索表单
 const searchForm = reactive({
   keyword: '',
   deptId: '',
   status: undefined
 })
-// 分页参数
 const pagination = reactive({
   pageNum: 1,
   pageSize: 10,
   total: 0
 })
-// 表格选择
 const selectedRows = ref<UserInfo[]>([])
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
 const currentEditData = ref<any>(null)
-
 const detailDialogVisible = ref(false)
 const selectedUserId = ref('')
 const selectedUserData = ref<UserInfo | null>(null)
-// 搜索栏的部门树（scoped）
 const searchDeptTree = ref<DeptItem[]>([])
 
-//=================页面需要的函数=================================
-/**
- * 获取用户列表
- */
 const fetchUserList = async () => {
   try {
     loading.value = true
-
-    // 构建请求参数
     const params: Record<string, any> = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
@@ -231,46 +206,27 @@ const fetchUserList = async () => {
     if (searchForm.deptId) {
       params.params.deptId = searchForm.deptId
     }
-    ///相当于
-    // const params = {
-    //   pageNum: 2,        // 来自 pagination.pageNum
-    //   pageSize: 10,      // 来自 pagination.pageSize
-    //   username: '张三',  // 来自 searchForm.username
-    //   status: 1         // 来自 searchForm.status
-    // }
-
-    // 清除空值
     const cleanParams: Record<string, any> = { ...params }
     Object.keys(cleanParams).forEach(key => {
       if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
         delete cleanParams[key]
       }
     })
-    // console.log('请求用户列表参数:', params)
     const res = await userApi.getUsers(params)
-    // console.log('用户列表响应:', res)
-    // 注意：你的接口返回是嵌套的data
     userList.value = res.data.data || []
     pagination.total = res.data.total || 0
   } catch (error) {
-    // console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
   } finally {
     loading.value = false
   }
 }
 
-/**
- * 搜索:保留搜索条件,重置到第1页
- */
 const handleSearch = () => {
   pagination.pageNum = 1
   fetchUserList()
 }
 
-/**
- * 重置搜索:清空搜索条件,重置到第1页
- */
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.deptId = ''
@@ -279,44 +235,28 @@ const handleReset = () => {
   fetchUserList()
 }
 
-/**
- * 分页大小改变
- */
 const handleSizeChange = (size: number) => {
   pagination.pageSize = size
   pagination.pageNum = 1
   fetchUserList()
 }
 
-/**
- * 页码改变
- */
 const handlePageChange = (page: number) => {
   pagination.pageNum = page
   fetchUserList()
 }
 
-/**
- * 表格选择改变
- */
 const handleSelectionChange = (rows: UserInfo[]) => {
   selectedRows.value = rows
 }
 
-/**
- * 新增用户
- */
 const handleAdd = () => {
-  // ================== 修改：打开添加用户对话框 ==================
   isEditMode.value = false
   currentEditData.value = null
   dialogVisible.value = true
 }
-/**
- * 重置密码
- */
+
 const resetPwd = async (row: UserInfo) => {
-  // ElMessage.info("重置密码:" + row.id)
   try {
     await ElMessageBox.confirm(
       `确定重置用户 "${row.nickname}" 的密码吗？`,
@@ -345,39 +285,26 @@ const resetPwd = async (row: UserInfo) => {
   }
 }
 
-/**
- * 编辑用户
- */
 const handleEdit = (row: UserInfo) => {
-  // ================== 修改：打开编辑用户对话框 ==================
   isEditMode.value = true
   currentEditData.value = {...row}
   dialogVisible.value = true
 }
-/**
- * 用户详情
- */
+
 const handleDetail = (row: UserInfo) => {
   selectedUserId.value = row.id
   selectedUserData.value = row
   detailDialogVisible.value = true
 }
 
-// ================== 新增：从详情页跳转到编辑 ==================
 const handleEditFromDetail = (userId: string) => {
-  // 关闭详情对话框
   detailDialogVisible.value = false
-
-  // 找到对应的用户数据
   const user = userList.value.find(item => item.id === userId)
   if (user) {
-    // 打开编辑对话框
     handleEdit(user)
   }
 }
-/**
- * 删除用户
- */
+
 const handleDelete = async (row: UserInfo) => {
   try {
     await ElMessageBox.confirm(
@@ -389,7 +316,6 @@ const handleDelete = async (row: UserInfo) => {
         type: 'warning'
       }
     )
-
     await userApi.deleteUser(row.id)
     ElMessage.success('删除成功')
     fetchUserList()
@@ -400,11 +326,8 @@ const handleDelete = async (row: UserInfo) => {
   }
 }
 
-// ================== 新增：处理对话框操作成功 ==================
 const handleDialogSuccess = () => {
-  // 刷新用户列表
   fetchUserList()
-  // ElMessage.success('操作成功')
 }
 
 const fetchSearchDeptTree = async () => {
@@ -414,7 +337,6 @@ const fetchSearchDeptTree = async () => {
   } catch { /* ignore */ }
 }
 
-//=================页面加载时的操作(生命周期钩子)============================================
 onMounted(() => {
   fetchUserList()
   fetchSearchDeptTree()
@@ -423,9 +345,9 @@ onMounted(() => {
 
 <style scoped>
 .user-manage {
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
+  padding: 24px;
+  background: var(--app-bg);
+  min-height: 100%;
 }
 
 .page-header {
@@ -437,53 +359,65 @@ onMounted(() => {
 
 .page-header h2 {
   margin: 0;
-  color: #333;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--app-text);
 }
 
-/* 搜索区域：采用 Flex 布局实现均匀间距，避免底部多余空白 */
+/* Search */
 .search-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 4px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  background: var(--app-bg-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--app-border);
 }
 
-/* 将 el-form 改为 flex 容器，由 gap 控制表单项间距 */
 .search-container .el-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 18px;  /* 行间距12px，列间距18px */
+  gap: 12px 18px;
   margin: 0;
 }
 
-/* 重置表单项的外边距，完全由 gap 控制 */
 .search-container .el-form-item {
   margin: 0 !important;
-  width: auto; /* 保持自动宽度 */
+  width: auto;
 }
 
-/* 状态选择器宽度固定（保持与原有 style="width:120px" 一致） */
 .search-container .el-select {
   width: 120px;
 }
 
-/* 按钮组内部：搜索和重置按钮之间增加间距 */
 .search-container .el-form-item .el-button + .el-button {
-  margin-left: 12px;
+  margin-left: 10px;
 }
 
-/* 清除按钮默认的左外边距，使其与左侧表单项对齐 */
-.search-container .el-form-item .el-button:first-child {
-  margin-left: 0;
-}
-
+/* Table */
 .table-container {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  background: var(--app-bg-surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--app-border);
 }
 
+:deep(.table-container .el-table) {
+  --el-table-border-color: var(--app-border);
+}
+
+:deep(.table-container .el-table th.el-table__cell) {
+  background: var(--app-bg-elevated);
+  color: var(--app-text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Pagination */
 .pagination {
   display: flex;
   justify-content: flex-end;
+  padding: 0 4px;
 }
 </style>

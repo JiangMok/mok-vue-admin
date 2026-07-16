@@ -1,1053 +1,701 @@
-<!-- src/views/base/welcome/index.vue -->
+<!-- src/views/base/dashboard/index.vue -->
 <template>
   <div class="dashboard-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h1 class="page-title">系统监控仪表盘</h1>
-      <p class="page-subtitle">实时监控系统运行状态与性能指标</p>
+      <div class="page-header-left">
+        <h1 class="page-title">系统监控仪表盘</h1>
+        <p class="page-subtitle">实时监控系统运行状态与性能指标</p>
+      </div>
+      <div class="page-header-actions">
+        <span class="auto-refresh-label">自动刷新</span>
+        <el-switch v-model="autoRefresh" size="small" @change="onAutoRefreshToggle" />
+        <el-button size="small" @click="refreshData" :loading="healthLoading">
+          <el-icon><Refresh /></el-icon> 刷新
+        </el-button>
+      </div>
     </div>
 
-    <!-- 系统状态概览 -->
-    <div class="overview-section">
-      <el-row :gutter="20">
-        <!-- 应用状态 -->
-        <el-col :xs="24" :sm="8">
-          <el-card class="overview-card status-card">
-            <div class="card-content">
-              <div class="status-icon">
-                <el-icon :size="40" color="#409eff">
-                  <Tools />
-                </el-icon>
-              </div>
-              <div class="status-info">
-                <h3>应用状态</h3>
-                <div class="status-value">
-                  <el-tag type="success" size="large" effect="dark">运行正常</el-tag>
-                </div>
-                <p class="status-desc">{{ systemInfo.appName }}</p>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-
-        <!-- 运行时间 -->
-        <el-col :xs="24" :sm="8">
-          <el-card class="overview-card uptime-card">
-            <div class="card-content">
-              <div class="status-icon">
-                <el-icon :size="40" color="#67c23a">
-                  <Clock />
-                </el-icon>
-              </div>
-              <div class="status-info">
-                <h3>运行时间</h3>
-                <div class="status-value uptime-value">{{ systemInfo.upTime || '正在获取...' }}</div>
-                <p class="status-desc">系统持续运行时长</p>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-
-        <!-- 系统版本 -->
-        <el-col :xs="24" :sm="8">
-          <el-card class="overview-card version-card">
-            <div class="card-content">
-              <div class="status-icon">
-                <el-icon :size="40" color="#e6a23c">
-                  <Monitor />
-                </el-icon>
-              </div>
-              <div class="status-info">
-                <h3>系统版本</h3>
-                <div class="status-value version-value">v{{ systemInfo.version || '1.0.0' }}</div>
-                <p class="status-desc">当前应用版本</p>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 系统健康检查 -->
-    <div class="health-section">
-      <el-card class="health-card">
-        <template #header>
-          <div class="card-header">
-            <span>系统健康状态</span>
-            <el-button type="primary" size="small" @click="refreshHealth" :loading="healthLoading">
-              <el-icon><Refresh /></el-icon> 刷新状态
-            </el-button>
-          </div>
-        </template>
-
-        <div class="health-grid">
-          <!-- 应用状态 -->
-          <div class="health-item" :class="healthData.status === 'UP' ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <SetUp v-if="healthData.status === 'UP'" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>应用服务</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.status === 'UP' ? 'success' : 'danger'" size="small">
-                  {{ healthData.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">应用名称：</span>
-                  <span class="detail-value">{{ healthData.application || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">版本：</span>
-                  <span class="detail-value">v{{ healthData.version || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">检测时间：</span>
-                  <span class="detail-value">{{ formatTimestamp(healthData.timestamp) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- 内存状态 -->
-          <div class="health-item" :class="healthData.memory?.up ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <Cpu v-if="healthData.memory?.up" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>内存使用</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.memory?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.memory?.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">使用率：</span>
-                  <span class="detail-value">{{ healthData.memory?.details?.usedPercentage || '--' }}</span>
-                  <el-tooltip placement="top">
-                    <template #content>
-                      <div style="max-width: 200px; font-size: 12px;">
-                        相对于最大堆内存({{ healthData.memory?.details?.max }})的使用率
-                      </div>
-                    </template>
-                    <el-icon style="margin-left: 4px; color: #999;" size="14">
-                      <InfoFilled />
-                    </el-icon>
-                  </el-tooltip>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">已用内存：</span>
-                  <span class="detail-value">{{ healthData.memory?.details?.used || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">可用内存：</span>
-                  <span class="detail-value">{{ healthData.memory?.details?.free || '--' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 数据库状态 -->
-          <div class="health-item" :class="healthData.database?.up ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <Coin v-if="healthData.database?.up" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>数据库</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.database?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.database?.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">响应时间：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.responseTime || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">用户数：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.userCount || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">版本：</span>
-                  <span class="detail-value">{{ healthData.database?.details?.version || '--' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Redis状态 -->
-          <div class="health-item" :class="healthData.redis?.up ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <Collection v-if="healthData.redis?.up" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>Redis缓存</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.redis?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.redis?.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">响应时间：</span>
-                  <span class="detail-value">{{ healthData.redis?.details?.responseTime || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">连接状态：</span>
-                  <span class="detail-value">{{ healthData.redis?.details?.info || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">响应：</span>
-                  <span class="detail-value">{{ healthData.redis?.details?.response || '--' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- Elasticsearch 状态 -->
-          <div class="health-item" :class="healthData.elasticsearch?.up ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <Document v-if="healthData.elasticsearch?.up" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>Elasticsearch</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.elasticsearch?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.elasticsearch?.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">集群状态：</span>
-                  <span class="detail-value">{{ healthData.elasticsearch?.details?.status || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">集群名称：</span>
-                  <span class="detail-value">{{ healthData.elasticsearch?.details?.clusterName || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">节点数：</span>
-                  <span class="detail-value">{{ healthData.elasticsearch?.details?.nodeCount || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">数据节点：</span>
-                  <span class="detail-value">{{ healthData.elasticsearch?.details?.dataNodeCount || '--' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">响应时间：</span>
-                  <span class="detail-value">{{ healthData.elasticsearch?.details?.responseTime || '--' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- RabbitMQ 状态 -->
-          <div class="health-item" :class="healthData.rabbitmq?.up ? 'healthy' : 'unhealthy'">
-            <div class="health-icon">
-              <el-icon :size="32">
-                <Connection v-if="healthData.rabbitmq?.up" />
-                <Warning v-else />
-              </el-icon>
-            </div>
-            <div class="health-content">
-              <h4>RabbitMQ</h4>
-              <div class="health-status">
-                <el-tag :type="healthData.rabbitmq?.up ? 'success' : 'danger'" size="small">
-                  {{ healthData.rabbitmq?.status || '未知' }}
-                </el-tag>
-              </div>
-              <div class="health-details">
-                <div class="detail-item">
-                  <span class="detail-label">地址：</span>
-                  <span class="detail-value">{{ healthData.rabbitmq?.details?.host }}:{{ healthData.rabbitmq?.details?.port }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">虚拟主机：</span>
-                  <span class="detail-value">{{ healthData.rabbitmq?.details?.virtualHost }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">响应时间：</span>
-                  <span class="detail-value">{{ healthData.rabbitmq?.details?.responseTime }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">连接状态：</span>
-                  <span class="detail-value">{{ healthData.rabbitmq?.details?.connectionStatus }}</span>
-                </div>
-              </div>
-            </div>
+    <!-- 顶部：整体健康分数 + 概览卡片 -->
+    <div class="top-section">
+      <!-- 整体健康分数环形图 -->
+      <div class="health-score-card">
+        <div class="score-ring">
+          <svg viewBox="0 0 100 100" class="ring-svg">
+            <circle cx="50" cy="50" r="42" fill="none"
+              stroke="var(--app-bg)" stroke-width="8" />
+            <circle cx="50" cy="50" r="42" fill="none"
+              :stroke="scoreColor"
+              stroke-width="8"
+              stroke-linecap="round"
+              :stroke-dasharray="circumference"
+              :stroke-dashoffset="scoreOffset"
+              class="ring-arc" />
+          </svg>
+          <div class="score-text">
+            <span class="score-value" :style="{ color: scoreColor }">{{ healthScore }}%</span>
+            <span class="score-label">健康度</span>
           </div>
         </div>
-      </el-card>
+        <div class="score-summary">
+          <span class="summary-up">{{ upCount }} 正常</span>
+          <span v-if="warnCount" class="summary-warn">{{ warnCount }} 警告</span>
+          <span v-if="downCount" class="summary-down">{{ downCount }} 异常</span>
+        </div>
+      </div>
+
+      <!-- 概览卡片 -->
+      <div class="overview-cards">
+        <el-card class="stat-card" shadow="never">
+          <div class="stat-icon status-bg"><el-icon :size="22"><CircleCheckFilled /></el-icon></div>
+          <div class="stat-info">
+            <span class="stat-value">{{ healthData.status || '--' }}</span>
+            <span class="stat-label">应用状态</span>
+          </div>
+        </el-card>
+        <el-card class="stat-card" shadow="never">
+          <div class="stat-icon uptime-bg"><el-icon :size="22"><Clock /></el-icon></div>
+          <div class="stat-info">
+            <span class="stat-value mono">{{ systemInfo.upTime || '--' }}</span>
+            <span class="stat-label">运行时间</span>
+          </div>
+        </el-card>
+        <el-card class="stat-card" shadow="never">
+          <div class="stat-icon version-bg"><el-icon :size="22"><Monitor /></el-icon></div>
+          <div class="stat-info">
+            <span class="stat-value mono">v{{ systemInfo.version || '1.0.0' }}</span>
+            <span class="stat-label">系统版本</span>
+          </div>
+        </el-card>
+      </div>
     </div>
 
-    <!-- 系统详细信息 -->
-    <div class="details-section">
-      <el-card class="details-card">
-        <template #header>
-          <div class="card-header">
-            <span>系统环境信息</span>
-          </div>
-        </template>
+    <!-- 核心服务 -->
+    <div class="section">
+      <div class="section-header"><h3>核心服务</h3></div>
+      <div class="health-grid">
+        <!-- 应用服务 -->
+        <HealthCard icon="SetUp" label="应用服务" :item="appHealth">
+          <template #details>
+            <div class="detail-row"><span>应用名称</span><span>{{ healthData.application || '--' }}</span></div>
+            <div class="detail-row"><span>版本</span><span class="mono">v{{ healthData.version || '--' }}</span></div>
+            <div class="detail-row"><span>检测时间</span><span class="mono">{{ formatTimestamp(healthData.timestamp) }}</span></div>
+          </template>
+        </HealthCard>
 
-        <div class="details-grid">
-          <div class="info-row">
-            <span class="info-label">操作系统：</span>
-            <span class="info-value">{{ systemInfo.osName }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">系统架构：</span>
-            <span class="info-value">{{ systemInfo.osArch }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Java版本：</span>
-            <span class="info-value">{{ systemInfo.javaVersion }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">用户目录：</span>
-            <span class="info-value">{{ systemInfo.userHome }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">数据时间：</span>
-            <span class="info-value">{{ formatTimestamp(systemInfo.timestamp) }}</span>
-          </div>
-        </div>
-      </el-card>
+        <!-- 数据库 -->
+        <HealthCard icon="Coin" label="数据库" :item="healthData.database">
+          <template #details>
+            <div class="detail-row"><span>MySQL 版本</span><span class="mono">{{ healthData.database?.details?.version || '--' }}</span></div>
+            <div class="detail-row"><span>用户数</span><span class="mono">{{ healthData.database?.details?.userCount || '--' }}</span></div>
+            <div class="detail-row"><span>响应时间</span><RespTime :ms="getRespMs(healthData.database)" /></div>
+          </template>
+        </HealthCard>
 
-      <!-- 内存使用图表 -->
-      <el-card class="details-card">
-        <template #header>
-          <div class="card-header">
-            <span>内存使用情况</span>
-          </div>
-        </template>
+        <!-- Redis -->
+        <HealthCard icon="Collection" label="Redis 缓存" :item="healthData.redis">
+          <template #details>
+            <div class="detail-row"><span>PING</span><span class="mono">{{ healthData.redis?.details?.response || '--' }}</span></div>
+            <div class="detail-row"><span>连接状态</span><span>{{ healthData.redis?.details?.info || '--' }}</span></div>
+            <div class="detail-row"><span>响应时间</span><RespTime :ms="getRespMs(healthData.redis)" /></div>
+          </template>
+        </HealthCard>
 
-        <div class="memory-chart">
-          <div class="chart-container" v-if="memoryDetails.used && memoryDetails.total">
-            <div class="memory-usage-section">
-              <div class="usage-header">
-                <span>当前堆内存使用率</span>
-                <span class="usage-percent">{{ memoryDetails.currentUsage.toFixed(1) }}%</span>
-              </div>
-              <div class="memory-bar">
-                <div
-                  class="memory-used"
-                  :style="{ width: memoryDetails.currentUsage + '%' }"
-                >
-                  <span class="bar-label">{{ memoryDetails.currentUsage.toFixed(1) }}%</span>
-                </div>
-              </div>
-              <div class="usage-description">
-                <el-icon><InfoFilled /></el-icon>
-                <span>相对于当前堆内存({{ memoryDetails.total }})的使用率</span>
-              </div>
-            </div>
-
-            <div class="memory-stats">
-              <div class="stat-item">
-                <div class="stat-label">已用内存</div>
-                <div class="stat-value">{{ memoryDetails.used }}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">可用内存</div>
-                <div class="stat-value">{{ memoryDetails.free }}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">当前堆内存</div>
-                <div class="stat-value">{{ memoryDetails.total }}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">最大堆内存</div>
-                <div class="stat-value">{{ memoryDetails.max }}</div>
-              </div>
-            </div>
-
-            <!-- 使用率对比 -->
-            <div class="usage-comparison">
-              <div class="comparison-item">
-                <div class="comparison-label">相对于最大堆内存</div>
-                <div class="comparison-value">{{ memoryDetails.relativeToMax }}</div>
-              </div>
-              <div class="comparison-item">
-                <div class="comparison-label">相对于当前堆内存</div>
-                <div class="comparison-value">{{ memoryDetails.currentUsage.toFixed(1) }}%</div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="no-data">
-            <el-icon><DataLine /></el-icon>
-            <p>等待健康检查数据...</p>
-          </div>
-        </div>
-      </el-card>
+        <!-- RabbitMQ -->
+        <HealthCard icon="Connection" label="RabbitMQ" :item="healthData.rabbitmq">
+          <template #details>
+            <div class="detail-row"><span>地址</span><span class="mono">{{ healthData.rabbitmq?.details?.host }}:{{ healthData.rabbitmq?.details?.port }}</span></div>
+            <div class="detail-row"><span>vHost</span><span class="mono">{{ healthData.rabbitmq?.details?.virtualHost || '--' }}</span></div>
+            <div class="detail-row"><span>响应时间</span><RespTime :ms="getRespMs(healthData.rabbitmq)" /></div>
+          </template>
+        </HealthCard>
+      </div>
     </div>
 
-    <!-- 页面底部 -->
+    <!-- 系统资源 -->
+    <div class="section">
+      <div class="section-header"><h3>系统资源</h3></div>
+      <div class="health-grid">
+        <!-- CPU -->
+        <HealthCard icon="Cpu" label="CPU" :item="healthData.cpu">
+          <template #details>
+            <div class="detail-row"><span>处理器数</span><span class="mono">{{ healthData.cpu?.details?.processors || '--' }}</span></div>
+            <div class="detail-row"><span>系统负载</span><span class="mono">{{ healthData.cpu?.details?.loadAverage || '--' }}</span></div>
+            <div class="detail-row"><span>单核负载</span><span class="mono">{{ healthData.cpu?.details?.loadPerProcessor || '--' }}</span></div>
+          </template>
+        </HealthCard>
+
+        <!-- 内存 — 带环形图 -->
+        <el-card class="health-item" :class="healthData.memory?.up ? 'healthy' : 'unhealthy'" shadow="never">
+          <div class="health-indicator"><span class="health-dot"></span><h4>内存使用</h4></div>
+          <el-tag :type="statusTagType(healthData.memory)" size="small" effect="plain">{{ healthData.memory?.status || '未知' }}</el-tag>
+          <div class="memory-ring-row">
+            <svg viewBox="0 0 80 80" class="mini-ring">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="var(--app-bg)" stroke-width="8" />
+              <circle cx="40" cy="40" r="32" fill="none"
+                :stroke="memoryUsedPercent > 90 ? 'var(--app-danger)' : memoryUsedPercent > 70 ? 'var(--app-warning)' : 'var(--app-accent)'"
+                stroke-width="8" stroke-linecap="round"
+                :stroke-dasharray="circumferenceMini"
+                :stroke-dashoffset="memoryRingOffset"
+                class="mini-ring-arc" />
+            </svg>
+            <div class="memory-nums">
+              <span class="memory-pct">{{ memoryDetails.currentUsage.toFixed(1) }}%</span>
+              <span class="memory-used-text">{{ memoryDetails.used }} / {{ memoryDetails.total }}</span>
+            </div>
+          </div>
+          <div class="detail-grid-2col">
+            <div class="detail-row"><span>最大堆</span><span class="mono">{{ memoryDetails.max }}</span></div>
+            <div class="detail-row"><span>可用</span><span class="mono">{{ memoryDetails.free }}</span></div>
+          </div>
+        </el-card>
+
+        <!-- 线程 -->
+        <HealthCard icon="Operation" label="线程" :item="healthData.threads">
+          <template #details>
+            <div class="detail-row"><span>活跃线程</span><span class="mono">{{ healthData.threads?.details?.active || '--' }}</span></div>
+            <div class="detail-row"><span>峰值线程</span><span class="mono">{{ healthData.threads?.details?.peak || '--' }}</span></div>
+            <div class="detail-row"><span>守护线程</span><span class="mono">{{ healthData.threads?.details?.daemon || '--' }}</span></div>
+            <div class="detail-row"><span>死锁</span><span class="mono" :class="{ 'text-danger': healthData.threads?.details?.deadlocked > 0 }">{{ healthData.threads?.details?.deadlocked || 0 }}</span></div>
+          </template>
+        </HealthCard>
+
+        <!-- 磁盘 -->
+        <HealthCard icon="Files" label="磁盘" :item="healthData.disk">
+          <template #details>
+            <div v-for="(info, path) in healthData.disk?.details || {}" :key="path" class="disk-item">
+              <div class="detail-row"><span class="mono">{{ path }}</span><span class="mono">{{ info.usedPercent }}</span></div>
+              <div class="disk-bar"><div class="disk-used" :style="{ width: info.usedPercent || '0%' }"></div></div>
+              <div class="detail-row" style="font-size:11px"><span>空闲 {{ info.free }}</span><span>总计 {{ info.total }}</span></div>
+            </div>
+          </template>
+        </HealthCard>
+      </div>
+    </div>
+
+    <!-- JVM 运行时 -->
+    <div class="section">
+      <div class="section-header"><h3>JVM 运行时</h3></div>
+      <div class="health-grid cols-2">
+        <!-- GC -->
+        <HealthCard icon="Delete" label="垃圾回收" :item="healthData.gc">
+          <template #details>
+            <div class="detail-row"><span>总回收次数</span><span class="mono">{{ healthData.gc?.details?.totalCollections || '--' }}</span></div>
+            <div class="detail-row"><span>总耗时</span><span class="mono">{{ healthData.gc?.details?.totalTime || '--' }}</span></div>
+          </template>
+        </HealthCard>
+
+        <!-- 连接池 -->
+        <HealthCard icon="Link" label="连接池 HikariCP" :item="healthData.connectionPool">
+          <template #details>
+            <div class="detail-row"><span>活跃 / 空闲</span><span class="mono">{{ healthData.connectionPool?.details?.active || 0 }} / {{ healthData.connectionPool?.details?.idle || 0 }}</span></div>
+            <div class="detail-row"><span>总连接数</span><span class="mono">{{ healthData.connectionPool?.details?.total || 0 }}</span></div>
+            <div class="detail-row"><span>等待线程</span><span class="mono" :class="{ 'text-warning': healthData.connectionPool?.details?.pending > 0 }">{{ healthData.connectionPool?.details?.pending || 0 }}</span></div>
+            <div class="detail-row"><span>最大连接数</span><span class="mono">{{ healthData.connectionPool?.details?.maxPoolSize || '--' }}</span></div>
+          </template>
+        </HealthCard>
+      </div>
+    </div>
+
+    <!-- 系统环境 + 内存详情 -->
+    <div class="section">
+      <div class="section-header"><h3>系统环境</h3></div>
+      <div class="env-cards">
+        <div class="env-card">
+          <el-icon :size="18"><Monitor /></el-icon>
+          <span class="env-label">操作系统</span>
+          <span class="env-value">{{ systemInfo.osName || '--' }}</span>
+        </div>
+        <div class="env-card">
+          <el-icon :size="18"><Cpu /></el-icon>
+          <span class="env-label">系统架构</span>
+          <span class="env-value mono">{{ systemInfo.osArch || '--' }}</span>
+        </div>
+        <div class="env-card">
+          <el-icon :size="18"><SetUp /></el-icon>
+          <span class="env-label">Java 版本</span>
+          <span class="env-value mono">{{ systemInfo.javaVersion || '--' }}</span>
+        </div>
+        <div class="env-card">
+          <el-icon :size="18"><FolderOpened /></el-icon>
+          <span class="env-label">用户目录</span>
+          <span class="env-value mono">{{ systemInfo.userHome || '--' }}</span>
+        </div>
+        <div class="env-card">
+          <el-icon :size="18"><Clock /></el-icon>
+          <span class="env-label">数据时间</span>
+          <span class="env-value mono">{{ formatTimestamp(systemInfo.timestamp) }}</span>
+        </div>
+        <div class="env-card">
+          <el-icon :size="18"><Refresh /></el-icon>
+          <span class="env-label">最后更新</span>
+          <span class="env-value mono">{{ lastUpdateTime || '--' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
     <div class="footer">
-      <p>最后更新：{{ lastUpdateTime }}</p>
-      <p class="copyright">© 2025 {{ systemInfo.appName || '系统监控' }} - v{{ systemInfo.version || '1.0.0' }}</p>
+      <p>© 2025 {{ systemInfo.appName || 'MOK 系统监控' }} · v{{ systemInfo.version || '1.0.0' }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, h, watch } from 'vue'
+import { ElMessage, ElTag } from 'element-plus'
 import {
-  Monitor,
-  Clock,
-  Coin,
-  Refresh,
-  Cpu,
-  Collection,
-  SetUp,
-  Warning,
-  DataLine,
-  InfoFilled, Tools,
-  Connection
+  Monitor, Clock, Cpu, Collection, SetUp, Refresh, CircleCheckFilled,
+  Coin, Connection, Files, FolderOpened, Delete, Link, Operation
 } from '@element-plus/icons-vue'
-import { sysInfoApi } from "@/api";
+import { sysInfoApi } from "@/api"
 
-// 系统信息
-const systemInfo = reactive({
-  appName: '',
-  userHome: '',
-  osArch: '',
-  upTime: '',
-  version: '',
-  timestamp: 0,
-  javaVersion: '',
-  osName: ''
+// ────────────── 子组件：健康卡片 ──────────────
+const RespTime = (props: { ms: number }) => {
+  if (!props.ms) return h('span', { class: 'mono' }, '--')
+  const color = props.ms < 50 ? 'var(--app-success)' : props.ms < 200 ? 'var(--app-warning)' : 'var(--app-danger)'
+  return h('span', { class: 'mono', style: { color, fontWeight: 600 } }, props.ms + 'ms')
+}
+RespTime.props = { ms: Number }
+
+const HealthCard = (props: any, { slots }: any) => {
+  const item = props.item || {}
+  const up = item.up !== false
+  const status = item.status || '未知'
+
+  return h('el-card', {
+    class: ['health-item', up ? 'healthy' : 'unhealthy'],
+    shadow: 'never'
+  }, {
+    default: () => [
+      h('div', { class: 'health-indicator' }, [
+        h('span', { class: 'health-dot' }),
+        h('h4', {}, props.label)
+      ]),
+      h('el-tag', {
+        type: up ? (status === 'WARNING' ? 'warning' : 'success') : 'danger',
+        size: 'small',
+        effect: 'plain'
+      }, () => status),
+      slots.details ? slots.details() : null
+    ]
+  })
+}
+HealthCard.props = { icon: String, label: String, item: Object }
+HealthCard.emits = []
+
+// ────────────── 数据 ──────────────
+const systemInfo = reactive<any>({
+  appName: '', userHome: '', osArch: '', upTime: '', version: '', timestamp: 0, javaVersion: '', osName: ''
 })
-
-// 健康检查数据
-const healthData = reactive({
-  database: {
-    status: '',
-    details: {
-      responseTime: '',
-      userCount: 0,
-      version: '',
-      connection: ''
-    },
-    up: false
-  },
-  elasticsearch: {   // 新增
-    status: '',
-    details: {
-      clusterName: '',
-      status: '',
-      responseTime: '',
-      nodeCount: '',
-      dataNodeCount: ''
-    },
-    up: false
-  },
-  rabbitmq: {   // 新增
-    status: '',
-    details: {
-      host: '',
-      port: '',
-      virtualHost: '',
-      responseTime: '',
-      connectionStatus: ''
-    },
-    up: false
-  },
-  memory: {
-    status: '',
-    details: {
-      total: '',
-      usedPercentage: '',
-      max: '',
-      used: '',
-      free: ''
-    },
-    up: false
-  },
-  redis: {
-    status: '',
-    details: {
-      info: '',
-      response: '',
-      responseTime: ''
-    },
-    up: false
-  },
-  application: '',
-  version: '',
-  timestamp: 0,
-  status: ''
+const healthData = reactive<any>({
+  database: {}, redis: {}, memory: {}, rabbitmq: {}, cpu: {}, threads: {}, gc: {}, disk: {}, connectionPool: {},
+  application: '', version: '', timestamp: 0, status: ''
 })
-
-// 加载状态
-const systemLoading = ref(false)
 const healthLoading = ref(false)
-
-// 最后更新时间
 const lastUpdateTime = ref('')
 
-// 计算内存详细信息
+// 自动刷新
+const AUTO_KEY = 'dashboard_auto_refresh'
+const autoRefresh = ref(localStorage.getItem(AUTO_KEY) === 'true')
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+const REFRESH_INTERVAL = 30_000
+
+const startAutoRefresh = () => {
+  stopAutoRefresh()
+  refreshTimer = setInterval(fetchHealthData, REFRESH_INTERVAL)
+}
+const stopAutoRefresh = () => {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null }
+}
+const onAutoRefreshToggle = (val: boolean) => {
+  localStorage.setItem(AUTO_KEY, String(val))
+  val ? startAutoRefresh() : stopAutoRefresh()
+}
+const refreshData = () => {
+  fetchHealthData()
+  // 手动刷新后重置计时器，避免刚刷完又自动刷
+  if (autoRefresh.value) startAutoRefresh()
+}
+
+// ────────────── SVG 环形图常量 ──────────────
+const circumference = 2 * Math.PI * 42
+const circumferenceMini = 2 * Math.PI * 32
+
+// ────────────── 计算属性 ──────────────
+const allComponents = computed(() => [
+  healthData.database, healthData.redis, healthData.memory, healthData.rabbitmq,
+  healthData.cpu, healthData.threads, healthData.gc, healthData.disk, healthData.connectionPool
+])
+
+const upCount = computed(() => allComponents.value.filter(c => c?.status === 'UP').length)
+const warnCount = computed(() => allComponents.value.filter(c => c?.status === 'WARNING').length)
+const downCount = computed(() => allComponents.value.filter(c => c && c.status && c.status !== 'UP' && c.status !== 'WARNING').length)
+
+const totalChecked = computed(() => allComponents.value.filter(c => c?.status).length)
+
+const healthScore = computed(() => {
+  if (totalChecked.value === 0) return 0
+  const score = ((upCount.value * 100 + warnCount.value * 70) / (totalChecked.value * 100)) * 100
+  return Math.round(score)
+})
+
+const scoreColor = computed(() => {
+  if (healthScore.value >= 90) return 'var(--app-success)'
+  if (healthScore.value >= 70) return 'var(--app-warning)'
+  return 'var(--app-danger)'
+})
+
+const scoreOffset = computed(() => {
+  return circumference - (healthScore.value / 100) * circumference
+})
+
+const appHealth = computed(() => ({
+  status: healthData.status || '未知',
+  up: healthData.status === 'UP',
+  details: {}
+}))
+
 const memoryDetails = computed(() => {
-  const details = healthData.memory?.details
-  if (!details || !details.used || !details.total) {
-    return {
-      used: '0',
-      total: '0',
-      free: '0',
-      max: '0',
-      currentUsage: 0,
-      relativeToMax: '0%'
-    }
-  }
-
-  // 解析内存字符串为统一单位（MB）
-  const parseToMB = (valueStr: string): number => {
-    if (!valueStr) return 0
-
-    const match = valueStr.match(/^([\d.]+)\s*([KMGT]?B)$/i)
-    if (!match) return 0
-
-    const value = parseFloat(match[1] || '0')
-    const unit = match[2] || ''.toUpperCase()
-
-    switch (unit) {
-      case 'B': return value / (1024 * 1024)
-      case 'KB': return value / 1024
-      case 'MB': return value
-      case 'GB': return value * 1024
-      case 'TB': return value * 1024 * 1024
-      default: return value
-    }
-  }
-
-  const usedMB = parseToMB(details.used)
-  const totalMB = parseToMB(details.total)
-  const maxMB = parseToMB(details.max)
-
-  // 计算两种使用率
-  const currentUsage = totalMB > 0 ? (usedMB / totalMB) * 100 : 0
-  const relativeToMax = maxMB > 0 ? ((usedMB / maxMB) * 100).toFixed(2) + '%' : '0%'
-
+  const d = healthData.memory?.details
+  if (!d) return { used: '--', total: '--', free: '--', max: '--', currentUsage: 0 }
   return {
-    used: details.used,
-    total: details.total,
-    free: details.free || '0',
-    max: details.max || '0',
-    currentUsage: currentUsage,
-    relativeToMax: relativeToMax,
-    usedMB,
-    totalMB,
-    maxMB
+    used: d.used || '--',
+    total: d.total || '--',
+    free: d.free || '--',
+    max: d.max || '--',
+    currentUsage: parseFloat(d.usedPercentage) || 0
   }
 })
 
-// 格式化时间戳
-const formatTimestamp = (timestamp: number) => {
-  if (!timestamp) return '--'
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
+const memoryUsedPercent = computed(() => memoryDetails.value.currentUsage)
+const memoryRingOffset = computed(() => circumferenceMini - (memoryUsedPercent.value / 100) * circumferenceMini)
+
+const statusTagType = (item: any) => {
+  if (!item?.status) return 'info'
+  if (item.status === 'UP') return 'success'
+  if (item.status === 'WARNING') return 'warning'
+  return 'danger'
+}
+
+// ────────────── 工具函数 ──────────────
+const getRespMs = (item: any): number => {
+  const rt = item?.details?.responseTime
+  if (!rt) return 0
+  const match = String(rt).match(/([\d.]+)/)
+  return match ? parseFloat(match[1]) : 0
+}
+
+const formatTimestamp = (ts: number) => {
+  if (!ts) return '--'
+  return new Date(ts).toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   })
 }
 
-// 获取系统信息
+// ────────────── API 调用 ──────────────
 const fetchSystemInfo = async () => {
   try {
-    systemLoading.value = true
-    const response = await sysInfoApi.info()
-
-    if (response.code === 200 && response.data) {
-      Object.assign(systemInfo, response.data)
-    } else {
-      ElMessage.error('获取系统信息失败：' + response.msg)
-    }
-  } catch (error) {
-    console.error('获取系统信息失败:', error)
-    ElMessage.error('获取系统信息失败，请检查网络连接')
-  } finally {
-    systemLoading.value = false
-  }
+    const res = await sysInfoApi.info()
+    if (res.code === 200 && res.data) Object.assign(systemInfo, res.data)
+  } catch { /* silent */ }
 }
 
-// 获取健康检查数据
 const fetchHealthData = async () => {
   try {
     healthLoading.value = true
-    const response = await sysInfoApi.health()
-
-    if (response.code === 200 && response.data) {
-      Object.assign(healthData, response.data)
+    const res = await sysInfoApi.health()
+    if (res.code === 200 && res.data) {
+      Object.assign(healthData, res.data)
       lastUpdateTime.value = formatTimestamp(Date.now())
-    } else {
-      ElMessage.error('获取健康检查数据失败：' + response.msg)
     }
-  } catch (error) {
-    console.error('获取健康检查数据失败:', error)
-    ElMessage.error('获取健康检查数据失败，请检查网络连接')
-  } finally {
-    healthLoading.value = false
-  }
+  } catch { /* silent */ }
+  finally { healthLoading.value = false }
 }
 
-// 刷新健康检查
-const refreshHealth = () => {
-  fetchHealthData()
-}
-
-// 页面加载时获取数据
 onMounted(() => {
   fetchSystemInfo()
   fetchHealthData()
-
-  // // 每60秒自动刷新健康检查
-  // setInterval(() => {
-  //   fetchHealthData()
-  // }, 60000)
+  if (autoRefresh.value) startAutoRefresh()
 })
+onBeforeUnmount(stopAutoRefresh)
 </script>
 
 <style scoped>
+/* ===================================================================
+   Dashboard — "Precision Console"
+   整体健康分数环形图 + 9组件健康检查 + 资源监控
+   样式优化：呼吸灯签名元素 + 微妙的卡片层次 + 响应式网格
+   =================================================================== */
+
 .dashboard-container {
-  padding: 20px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: calc(100vh - 120px);
+  padding: 24px 28px;
+  background:
+    radial-gradient(ellipse 50% 30% at 50% 0%, rgba(59,89,152,0.03) 0%, transparent 60%),
+    var(--app-bg);
+  min-height: 100%;
 }
 
-/* 页面标题 */
+/* ========================= 页面标题 ========================= */
 .page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 8px;
-}
-
-.page-subtitle {
-  font-size: 14px;
-  color: #64748b;
-}
-
-/* 概览卡片 */
-.overview-section {
-  margin-bottom: 24px;
-}
-
-.overview-card {
-  border-radius: 12px;
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.overview-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.card-content {
-  display: flex;
-  align-items: center;
-  padding: 16px 0;
-}
-
-.status-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  background: rgba(64, 158, 255, 0.1);
-  margin-right: 16px;
-}
-
-.uptime-card .status-icon {
-  background: rgba(103, 194, 58, 0.1);
-}
-
-.version-card .status-icon {
-  background: rgba(230, 162, 60, 0.1);
-}
-
-.status-info h3 {
-  font-size: 16px;
-  font-weight: 500;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-.status-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.uptime-value {
-  color: #67c23a;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-}
-
-.version-value {
-  color: #e6a23c;
-}
-
-.status-desc {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-/* 健康检查 */
-.health-section {
-  margin-bottom: 24px;
-}
-
-.health-card {
-  border-radius: 12px;
-  border: none;
-}
-
-.card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+.page-header-left { flex: 1; }
+.page-title {
+  font-size: 21px; font-weight: 700; color: var(--app-text);
+  display: flex; align-items: center; gap: 10px;
+}
+.page-title::before {
+  content: ''; display: inline-block; width: 4px; height: 20px;
+  background: var(--app-accent); border-radius: 2px;
+}
+.page-subtitle { font-size: 12px; color: var(--app-text-muted); margin-top: 4px; margin-left: 14px; }
+
+.page-header-actions {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.auto-refresh-label {
+  font-size: 12px; color: var(--app-text-muted); user-select: none;
 }
 
+/* ========================= 顶部 ========================= */
+.top-section {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  align-items: stretch;
+}
+
+/* ---- 健康分数卡 ---- */
+.health-score-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--app-bg-surface); border-radius: var(--radius-lg);
+  border: 1px solid var(--app-border); padding: 16px 24px; min-width: 150px;
+  box-shadow: var(--shadow-sm);
+}
+.score-ring { position: relative; width: 90px; height: 90px; margin-bottom: 6px; }
+.ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-arc { transition: stroke-dashoffset 0.8s ease, stroke 0.6s ease; }
+.score-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-value { font-size: 22px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+.score-label { font-size: 10px; color: var(--app-text-muted); margin-top: 2px; letter-spacing: 1px; }
+.score-summary { display: flex; gap: 10px; font-size: 11px; }
+.summary-up { color: var(--app-success); font-weight: 500; }
+.summary-warn { color: var(--app-warning); font-weight: 500; }
+.summary-down { color: var(--app-danger); font-weight: 500; }
+
+/* ---- 概览卡片 ---- */
+.overview-cards { flex: 1; display: flex; gap: 14px; }
+.stat-card {
+  flex: 1; border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--app-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px);
+}
+.stat-card :deep(.el-card__body) {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px !important;
+}
+.stat-icon {
+  width: 40px; height: 40px; border-radius: var(--radius); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.status-bg  { background: linear-gradient(135deg, rgba(22,163,74,0.12), rgba(22,163,74,0.05)); color: var(--app-success); }
+.uptime-bg { background: linear-gradient(135deg, rgba(59,89,152,0.12), rgba(59,89,152,0.05)); color: var(--app-accent); }
+.version-bg{ background: linear-gradient(135deg, rgba(217,119,6,0.12), rgba(217,119,6,0.05)); color: var(--app-warning); }
+.stat-info { display: flex; flex-direction: column; gap: 2px; }
+.stat-value { font-size: 16px; font-weight: 600; color: var(--app-text); }
+.stat-label { font-size: 11px; color: var(--app-text-muted); letter-spacing: 0.3px; }
+
+/* ========================= 分区 ========================= */
+.section { margin-bottom: 22px; }
+.section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--app-border);
+}
+.section-header h3 {
+  font-size: 14px; font-weight: 600; color: var(--app-text-secondary);
+  display: flex; align-items: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.section-header h3::before {
+  content: ''; display: inline-block; width: 3px; height: 14px;
+  background: var(--app-accent); border-radius: 2px;
+}
+
+/* ========================= Health Grid ========================= */
 .health-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  gap: 14px;
 }
+.health-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
 
+/* ---- Health Item 卡片 ---- */
 .health-item {
-  padding: 20px;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.health-item.healthy {
-  border-left: 4px solid #10b981;
-}
-
-.health-item.unhealthy {
-  border-left: 4px solid #ef4444;
-}
-
-.health-item:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.health-item.healthy .health-icon {
-  color: #10b981;
-}
-
-.health-item.unhealthy .health-icon {
-  color: #ef4444;
-}
-
-.health-content {
-  margin-top: 12px;
-}
-
-.health-content h4 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 8px;
-}
-
-.health-status {
-  margin-bottom: 12px;
-}
-
-.health-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-}
-
-.detail-label {
-  color: #64748b;
-}
-
-.detail-value {
-  color: #1e293b;
-  font-weight: 500;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-}
-
-/* 详细信息 */
-.details-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 992px) {
-  .details-section {
-    grid-template-columns: 1fr;
-  }
-}
-
-.details-card {
-  border-radius: 12px;
-  border: none;
-}
-
-.details-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-label {
-  color: #64748b;
-  font-size: 14px;
-}
-
-.info-value {
-  color: #1e293b;
-  font-weight: 500;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-  text-align: right;
-}
-
-/* 内存图表 */
-.memory-chart {
-  padding: 20px 0;
-}
-
-.chart-container {
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-/* 当前堆内存使用率部分 */
-.memory-usage-section {
-  margin-bottom: 24px;
-}
-
-.usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.usage-header span {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.usage-percent {
-  font-size: 24px;
-  font-weight: 700;
-  color: #3b82f6;
-}
-
-.memory-bar {
-  height: 28px;
-  background: #e2e8f0;
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 8px;
   position: relative;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+/* 卡片顶部细微的强调色条 */
+.health-item::before {
+  content: ''; position: absolute; top: 0; left: 12px; right: 12px;
+  height: 2px; border-radius: 0 0 2px 2px;
+  transition: opacity 0.2s ease;
+  opacity: 0;
+}
+.health-item.healthy::before { background: var(--app-success); opacity: 0.35; }
+.health-item.unhealthy::before { background: var(--app-danger); opacity: 0.6; }
+.health-item:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
 }
 
-.memory-used {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  border-radius: 14px;
-  transition: width 1s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 50px;
+/* ---- 标题行 ---- */
+.health-indicator {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.health-indicator h4 {
+  font-size: 14px; font-weight: 600; color: var(--app-text); margin: 0;
 }
 
-.bar-label {
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+/* ---- 呼吸灯 (签名元素) ---- */
+.health-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.healthy .health-dot {
+  background: var(--app-success);
+  box-shadow: 0 0 0 0 rgba(22,163,74,0.5);
+  animation: breathe 3s ease-in-out infinite;
+}
+.unhealthy .health-dot {
+  background: var(--app-danger);
+  box-shadow: 0 0 0 0 rgba(220,38,38,0.5);
+  animation: breatheDanger 1.2s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+  50%     { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+}
+@keyframes breatheDanger {
+  0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+  50%     { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
 }
 
-.usage-description {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #64748b;
-  font-size: 12px;
-  padding: 4px 8px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border-left: 3px solid #3b82f6;
+/* ---- 卡片内容 ---- */
+.health-item :deep(.el-tag) {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; padding: 5px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row span:first-child { color: var(--app-text-muted); }
+.detail-row span:last-child { color: var(--app-text); font-weight: 500; }
+.detail-grid-2col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; margin-top: 6px;
 }
 
-.usage-description .el-icon {
-  color: #3b82f6;
-  font-size: 14px;
+/* ---- 磁盘 ---- */
+.disk-item { margin-top: 8px; }
+.disk-item:first-child { margin-top: 0; }
+.disk-bar {
+  height: 6px; background: var(--app-bg); border-radius: 3px;
+  margin: 5px 0; overflow: hidden;
+}
+.disk-used {
+  height: 100%; border-radius: 3px; transition: width 0.8s ease;
+  background: linear-gradient(90deg, var(--app-accent), var(--app-accent-hover));
 }
 
-/* 内存统计信息 */
-.memory-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin: 24px 0;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+/* ---- 内存环形图 ---- */
+.memory-ring-row {
+  display: flex; align-items: center; gap: 16px; margin: 12px 0 10px;
+}
+.mini-ring { width: 80px; height: 80px; flex-shrink: 0; transform: rotate(-90deg); }
+.mini-ring-arc { transition: stroke-dashoffset 0.8s ease, stroke 0.6s ease; }
+.memory-nums { display: flex; flex-direction: column; }
+.memory-pct {
+  font-size: 24px; font-weight: 700; font-family: var(--font-mono);
+  color: var(--app-accent); line-height: 1;
+}
+.memory-used-text {
+  font-size: 12px; color: var(--app-text-muted); font-family: var(--font-mono); margin-top: 4px;
 }
 
-@media (max-width: 768px) {
-  .memory-stats {
-    grid-template-columns: 1fr;
-  }
+/* ========================= 系统环境 ========================= */
+.env-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px;
+}
+.env-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 20px 14px;
+  background: var(--app-bg-surface); border-radius: var(--radius);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+.env-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.env-card .el-icon {
+  color: var(--app-accent); opacity: 0.7;
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: var(--app-accent-light); border-radius: 8px; padding: 7px;
+}
+.env-label {
+  font-size: 10px; color: var(--app-text-muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.env-value {
+  font-size: 12px; font-weight: 600; color: var(--app-text);
+  word-break: break-all; text-align: center; line-height: 1.4;
 }
 
-.stat-item {
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
+/* ========================= 工具类 ========================= */
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.text-danger  { color: var(--app-danger) !important; }
+.text-warning { color: var(--app-warning) !important; }
 
-.stat-label {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 6px;
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-}
-
-/* 使用率对比 */
-.usage-comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.comparison-item {
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  text-align: center;
-}
-
-.comparison-item:first-child {
-  border-left: 4px solid #10b981;
-}
-
-.comparison-item:last-child {
-  border-left: 4px solid #3b82f6;
-}
-
-.comparison-label {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 8px;
-}
-
-.comparison-value {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-}
-
-.comparison-item:first-child .comparison-value {
-  color: #10b981;
-}
-
-.comparison-item:last-child .comparison-value {
-  color: #3b82f6;
-}
-
-.no-data {
-  text-align: center;
-  padding: 40px 20px;
-  color: #94a3b8;
-}
-
-.no-data .el-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.no-data p {
-  font-size: 14px;
-}
-
-/* 页脚 */
+/* ========================= 页脚 ========================= */
 .footer {
-  text-align: center;
-  padding: 20px 0;
-  color: #94a3b8;
-  font-size: 14px;
-  border-top: 1px solid #e2e8f0;
-  margin-top: 20px;
+  text-align: center; padding: 14px 0 0;
+  color: var(--app-text-muted); font-size: 11px;
+  border-top: 1px solid var(--app-border); margin-top: 8px;
 }
+.footer p { margin: 2px 0; }
 
-.footer p {
-  margin: 4px 0;
+/* ========================= 响应式 ========================= */
+@media (max-width: 992px) {
+  .top-section { flex-direction: column; }
+  .health-score-card { min-width: auto; }
+  .health-grid.cols-2 { grid-template-columns: 1fr; }
 }
-
-.copyright {
-  font-size: 12px;
-  color: #cbd5e1;
+@media (max-width: 768px) {
+  .dashboard-container { padding: 16px; }
+  .overview-cards { flex-direction: column; }
+  .health-grid { grid-template-columns: 1fr; }
+  .env-cards { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

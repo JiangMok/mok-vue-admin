@@ -1,10 +1,7 @@
 <template>
   <div class="error-container">
     <div class="error-content">
-      <div class="error-icon">
-        <el-icon size="120"><CircleCloseFilled /></el-icon>
-      </div>
-      <h1 class="error-title">404</h1>
+      <div class="error-code mono">404</div>
       <h2 class="error-subtitle">页面不存在</h2>
       <p class="error-description">
         抱歉，您访问的页面不存在或已被移除
@@ -37,7 +34,6 @@ import { CircleCloseFilled, ArrowLeft, HomeFilled } from '@element-plus/icons-vu
 
 const router = useRouter()
 
-// 返回上一页
 const goBack = () => {
   if (window.history.length > 1) {
     router.go(-1)
@@ -46,7 +42,6 @@ const goBack = () => {
   }
 }
 
-// 返回首页
 const goHome = () => {
   router.push('/dashboard')
 }
@@ -58,90 +53,88 @@ const goHome = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--app-bg);
   padding: 20px;
 }
 
 .error-content {
   text-align: center;
-  max-width: 600px;
-  padding: 40px;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 0.5s ease;
+  max-width: 480px;
+  padding: 48px 40px;
+  background: var(--app-bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-md);
+  animation: fadeIn 0.4s ease;
 }
 
-.error-icon {
-  margin-bottom: 20px;
-}
-
-.error-icon :deep(svg) {
-  color: #f56c6c;
-  opacity: 0.8;
-}
-
-.error-title {
-  font-size: 80px;
-  font-weight: 700;
-  color: #f56c6c;
-  margin: 0 0 10px;
+.error-code {
+  font-size: 96px;
+  font-weight: 800;
+  color: var(--app-accent);
   line-height: 1;
+  margin-bottom: 8px;
+  letter-spacing: -2px;
 }
 
 .error-subtitle {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
-  color: #333;
-  margin: 0 0 15px;
+  color: var(--app-text);
+  margin: 0 0 12px;
 }
 
 .error-description {
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 30px;
-  line-height: 1.6;
+  font-size: 14px;
+  color: var(--app-text-muted);
+  margin: 0 0 28px;
 }
 
 .error-actions {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 .error-tips {
   text-align: left;
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid #409eff;
+  background: var(--app-bg-elevated);
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  border-left: 3px solid var(--app-accent);
 }
 
 .error-tips p {
   font-weight: 600;
-  color: #333;
-  margin: 0 0 10px;
+  color: var(--app-text);
+  margin: 0 0 8px;
+  font-size: 13px;
 }
 
 .error-tips ul {
   margin: 0;
-  padding-left: 20px;
-  color: #666;
+  padding-left: 18px;
+  color: var(--app-text-secondary);
+  font-size: 13px;
 }
 
 .error-tips li {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .error-tips li:last-child {
   margin-bottom: 0;
 }
 
+.mono {
+  font-family: var(--font-mono);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -149,18 +142,13 @@ const goHome = () => {
   }
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
   .error-content {
-    padding: 30px 20px;
+    padding: 32px 24px;
   }
 
-  .error-title {
-    font-size: 60px;
-  }
-
-  .error-subtitle {
-    font-size: 20px;
+  .error-code {
+    font-size: 72px;
   }
 
   .error-actions {
@@ -169,7 +157,6 @@ const goHome = () => {
 
   .error-actions .el-button {
     width: 100%;
-    margin-bottom: 10px;
   }
 }
 </style>

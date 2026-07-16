@@ -19,7 +19,7 @@
             @command="(command) => handleContextMenu(command, tab)"
           >
             <span class="tab-label">
-              <el-icon v-if="tab.icon" size="16">
+              <el-icon v-if="tab.icon" size="14">
                 <component :is="tab.icon" />
               </el-icon>
               {{ tab.title }}
@@ -134,17 +134,16 @@ const closeTab = (path: string) => {
 
 const refreshTab = (path: string) => {
   const currentRoute = router.currentRoute.value
-  const newQuery = { ...currentRoute.query, _t: Date.now() }  // 添加时间戳参数
+  const newQuery = { ...currentRoute.query, _t: Date.now() }
   router.push({ path, query: newQuery })
 }
 </script>
 
 <style scoped>
 .tabs-container {
-  background: white;
-  border-bottom: none;
-  padding: 0;
-  margin: 0;
+  background: var(--app-bg-surface);
+  border-bottom: 1px solid var(--app-border);
+  padding: 0 8px;
 }
 
 .el-tabs {
@@ -154,58 +153,58 @@ const refreshTab = (path: string) => {
 .tab-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px;
+  gap: 5px;
+  padding: 0 6px;
   cursor: pointer;
+  font-size: 13px;
 }
 
-.el-icon {
-  margin-right: 2px;
-}
-
-/* 清除标签头部的默认外边距/内边距 */
+/* 清除默认边距 */
 .tabs-container :deep(.el-tabs__header) {
   margin: 0 !important;
   padding: 0 !important;
 }
 
-/* 左右按钮样式优化（保持你之前的设置） */
+.tabs-container :deep(.el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+/* 左右箭头 */
 .tabs-container :deep(.el-tabs__nav-prev),
 .tabs-container :deep(.el-tabs__nav-next) {
   margin: 0;
   top: 50%;
   transform: translateY(-50%);
-  background-color: #f5f7fa;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
+  background-color: var(--app-bg-elevated);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
 .tabs-container :deep(.el-tabs__nav-prev:hover),
 .tabs-container :deep(.el-tabs__nav-next:hover) {
-  background-color: #ecf5ff;
-  border-color: #409eff;
-  color: #409eff;
+  background-color: var(--app-accent-light);
+  border-color: var(--app-accent);
+  color: var(--app-accent);
 }
 
-/* 突出当前激活标签 - 醒目处理 */
+/* 激活标签 */
 .tabs-container :deep(.el-tabs__item.is-active) {
-  font-weight: 700;                /* 更粗的字体 */
-  color: #409eff !important;       /* 主题蓝色，强制覆盖 */
-  background-color: #ecf5ff;       /* 浅蓝背景 */
-  border-radius: 4px;              /* 圆角 */
-  border-bottom: 2px solid #409eff; /* 底部加粗线，更显眼 */
-  transition: all 0.2s;
+  font-weight: 600;
+  color: var(--app-accent) !important;
+  background: var(--app-accent-light);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom: 2px solid var(--app-accent);
 }
 
 .tabs-container :deep(.el-tabs__item.is-active .tab-label) {
-  font-weight: 700;
-  color: #409eff;
+  font-weight: 600;
+  color: var(--app-accent);
 }
 
-/* 可选：给激活标签添加轻微阴影，更突出 */
-.tabs-container :deep(.el-tabs__item.is-active) {
-  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
+/* 普通标签 hover */
+.tabs-container :deep(.el-tabs__item:hover) {
+  color: var(--app-text) !important;
+  background: var(--app-bg-elevated);
 }
 </style>
