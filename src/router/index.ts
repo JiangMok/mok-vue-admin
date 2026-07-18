@@ -217,10 +217,20 @@ router.beforeEach(async (to, from, next) => {
       next({ ...to, replace: true })
     } catch (error) {
       console.error('权限获取失败:', error)
+      // 如果 token 已被拦截器清空（登录过期），直接跳转登录页
+      if (!userStore.isLoggedIn) {
+        next('/login')
+        return
+      }
       // 即使失败也继续，可能有缓存权限
       next()
     }
   } else {
+    // 已有菜单，但检查 token 是否仍然有效（可能被其他 API 调用清空）
+    if (!userStore.isLoggedIn) {
+      next('/login')
+      return
+    }
     next()
   }
   })

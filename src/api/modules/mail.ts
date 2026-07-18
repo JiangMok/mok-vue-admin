@@ -1,5 +1,5 @@
 import request from '@/utils/request.ts'
-import type { ApiResponse, MailRecipient, MailSender, MailRecipientFormData, MailSenderFormData, PageResponse } from '@/types'
+import type { ApiResponse, MailRecipient, MailSender, MailLog, MailRecipientFormData, MailSenderFormData, PageResponse } from '@/types'
 
 /**
  * 发件箱配置 API
@@ -38,5 +38,25 @@ export const mailRecipientApi = {
   },
   testSend: (id: string): Promise<ApiResponse> => {
     return request.post(`/mail-recipient/test/${id}`)
+  }
+}
+
+/**
+ * 邮件日志 API
+ */
+export const mailLogApi = {
+  getPage: (params: {
+    pageNum: number
+    pageSize: number
+    keyword?: string
+    params?: Record<string, any>
+  }): Promise<ApiResponse<PageResponse<MailLog>>> => {
+    return request.post('/mail-log/page', params)
+  },
+  getById: (id: string): Promise<ApiResponse<MailLog>> => {
+    return request.get(`/mail-log/${id}`)
+  },
+  delete: (id: string): Promise<ApiResponse> => {
+    return request.delete(`/mail-log/${id}`)
   }
 }

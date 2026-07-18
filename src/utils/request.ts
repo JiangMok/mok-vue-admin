@@ -128,11 +128,12 @@ async function handleTokenRefreshAndRetry(originalRequest: any): Promise<any> {
     userStore.clear();  // 只清空状态，不调用 logout()，因为 logout() 内部会刷新页面，影响体验
 
     // 11.14 跳转到登录页面
-    //      replace 表示替换当前历史记录，用户无法通过后退按钮回到过期前的页面
+    //      先用 router.replace，如果失败（如路由冲突）则用 location.href 兜底
     router.replace('/login').then(() => {
       console.log('✅ 路由跳转成功');
-    }).catch(err => {
-      console.error('❌ 路由跳转失败:', err);
+    }).catch(() => {
+      // 路由跳转失败时，用原生方式强制跳转，确保用户一定能到登录页
+      window.location.href = '/login';
     });
 
     // 11.15 将刷新失败的错误继续向上抛出，让调用方知道本次请求已失败

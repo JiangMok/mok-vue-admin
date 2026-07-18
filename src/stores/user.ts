@@ -197,9 +197,6 @@ export const useUserStore = defineStore('user', {
         console.error('退出登录失败:', error)
       } finally {
         this.clear()
-        localStorage.removeItem('token')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('userInfo')
         window.location.reload()
       }
     },
@@ -211,6 +208,9 @@ export const useUserStore = defineStore('user', {
       this.menus = []
       this.apiPermissions = []
       this.permissions = []
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userInfo')
     },
 
     init() {

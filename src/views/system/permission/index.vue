@@ -92,7 +92,7 @@
           <template #default="{ row }">
             <div v-if="row.icon" class="icon-cell">
               <el-icon>
-                <component :is="row.icon" />
+                <component :is="getIconComponent(row.icon)" />
               </el-icon>
               <span class="icon-name">{{ row.icon }}</span>
             </div>
@@ -188,6 +188,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Menu, Operation, Link } from '@element-plus/icons-vue'
+import { getIconComponent } from '@/utils/icons'
 import { useUserStore } from '@/stores/user.ts'
 import type { PermissionItem } from '@/types'
 import { permissionApi } from '@/api'

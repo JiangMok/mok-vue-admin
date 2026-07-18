@@ -66,7 +66,7 @@
           <div class="detail-content">
             <div v-if="detailData.icon" class="icon-display">
               <el-icon :size="20">
-                <component :is="detailData.icon" />
+                <component :is="getIconComponent(detailData.icon)" />
               </el-icon>
               <span class="icon-name">{{ detailData.icon }}</span>
             </div>
@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { Folder, Menu, Operation } from '@element-plus/icons-vue'
+import { getIconComponent } from '@/utils/icons'
 import type {ApiPermission, PermissionItem} from '@/types'
 import { permissionApi } from '@/api'
 

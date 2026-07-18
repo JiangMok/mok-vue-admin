@@ -390,6 +390,10 @@ onUnmounted(() => {
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
+:deep(.sidebar .el-menu--inline .el-menu-item) {
+  padding-left: 40px !important;
+}
+
 :deep(.sidebar .el-menu-item .el-icon),
 :deep(.sidebar .el-sub-menu .el-icon) {
   color: inherit;

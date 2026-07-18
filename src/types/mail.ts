@@ -51,3 +51,21 @@ export interface MailRecipientFormData {
   status: number
   mailTypes: string[]
 }
+
+/**
+ * 邮件日志类型
+ */
+export interface MailLog {
+  id: string
+  messageId: string
+  recipient: string
+  subject: string
+  mailType: string
+  content: string
+  sendStatus: string
+  failReason: string
+  sendTime?: string
+  retryCount: number
+  createTime?: string
+  updateTime?: string
+}

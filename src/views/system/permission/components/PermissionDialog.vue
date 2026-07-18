@@ -115,42 +115,7 @@
       </el-form-item>
 
       <el-form-item label="图标" prop="icon">
-        <el-input
-          v-model="formData.icon"
-          placeholder="输入图标名称（如：Search、User、Setting）"
-          clearable
-          :maxlength="50"
-          show-word-limit
-        >
-          <template #append>
-            <el-dropdown @command="handleIconSelect">
-              <el-button>
-                <el-icon><Search /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="Search">Search</el-dropdown-item>
-                  <el-dropdown-item command="Edit">Edit</el-dropdown-item>
-                  <el-dropdown-item command="Delete">Delete</el-dropdown-item>
-                  <el-dropdown-item command="Plus">Plus</el-dropdown-item>
-                  <el-dropdown-item command="User">User</el-dropdown-item>
-                  <el-dropdown-item command="Setting">Setting</el-dropdown-item>
-                  <el-dropdown-item command="HomeFilled">HomeFilled</el-dropdown-item>
-                  <el-dropdown-item command="Folder">Folder</el-dropdown-item>
-                  <el-dropdown-item command="Document">Document</el-dropdown-item>
-                  <el-dropdown-item command="Star">Star</el-dropdown-item>
-                  <el-dropdown-item command="ShoppingBag">ShoppingBag</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-        </el-input>
-        <div v-if="formData.icon" class="icon-preview">
-          <el-icon :size="20">
-            <component :is="formData.icon" />
-          </el-icon>
-          <span class="icon-name">{{ formData.icon }}</span>
-        </div>
+        <IconPicker v-model="formData.icon" />
       </el-form-item>
 
       <el-form-item label="显示排序" prop="sort">
@@ -178,29 +143,6 @@
       </el-form-item>
     </el-form>
 
-    <!-- 图标选择器对话框 -->
-    <el-dialog
-      v-model="showIconSelector"
-      title="选择图标"
-      width="800px"
-      append-to-body
-    >
-      <div class="icon-selector">
-        <!-- TODO: 实现图标选择器，可以使用element-plus的图标库或其他图标库 -->
-        <div class="icon-notice">
-          <el-alert type="info" show-icon :closable="false">
-            <template #title>
-              请输入图标名称，参考 Element Plus 图标库
-            </template>
-          </el-alert>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="showIconSelector = false">取消</el-button>
-        <el-button type="primary" @click="showIconSelector = false">确定</el-button>
-      </template>
-    </el-dialog>
-
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="handleClose">取消</el-button>
@@ -216,7 +158,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import {Search, ShoppingBag} from '@element-plus/icons-vue'
+import IconPicker from '@/components/common/IconPicker.vue'
 import type { PermissionFormData, PermissionItem } from '@/types'
 import { permissionApi } from '@/api'
 
@@ -237,11 +179,6 @@ const props = withDefaults(defineProps<Props>(), {
   isEdit: false,
   editData: null
 })
-
-// 处理图标选择
-const handleIconSelect = (command: string) => {
-  formData.icon = command
-}
 
 const emit = defineEmits<Emits>()
 
@@ -268,9 +205,6 @@ const formData = reactive<PermissionFormData>({
 // 权限列表数据（用于选择父级）
 const permissionList = ref<PermissionItem[]>([])
 const permissionLoading = ref(false)
-
-// 图标选择器
-const showIconSelector = ref(false)
 
 // 提交加载状态
 const submitLoading = ref(false)
@@ -568,29 +502,6 @@ onMounted(() => {
 
 <style scoped>
 .el-form-item {
-  margin-bottom: 20px;
-}
-
-.icon-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-}
-
-.icon-name {
-  font-size: 12px;
-  color: #666;
-}
-
-.icon-selector {
-  min-height: 300px;
-}
-
-.icon-notice {
   margin-bottom: 20px;
 }
 

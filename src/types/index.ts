@@ -17,4 +17,5 @@ export type { ProductItem, ProductFormData, SeckillFormData, ProductListParams }
 export type { CouponItem, CouponFormData } from './coupon'
 export type { OrderInfoEntity } from './order'
 export type { DeliveryOrderEntity } from './delivery'
-export type { MailSender, MailRecipient, MailSenderFormData, MailRecipientFormData } from './mail'
+export type { MailSender, MailRecipient, MailSenderFormData, MailRecipientFormData, MailLog } from './mail'
+export type { MqFailedMessage } from './mq'
