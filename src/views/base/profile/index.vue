@@ -150,7 +150,7 @@ const passwordForm = reactive({
 const passwordRules = {
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/, message: '密码需包含字母和数字，长度8-20位', trigger: 'blur' }
+    { pattern: /^(?=.*[A-Za-z])(?=.*\d).{8,20}$/, message: '密码需包含字母和数字，长度8-20位', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
