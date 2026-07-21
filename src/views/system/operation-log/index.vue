@@ -119,6 +119,7 @@
 
 
             <el-button
+              v-if="row.status == 1"
               type="primary"
               size="small"
               @click="openAnalysis(row)"
@@ -158,7 +159,8 @@
     />
     <AiAnalysisDialog
       v-model="dialogVisible"
-      :analysis-text="currentLogText"
+      :id="id"
+      type="OPERATION_LOG"
     />
   </div>
 
@@ -231,7 +233,7 @@ const disabledDate = (time: Date) => {
 const size = ref<'default'>('default')
 
 const dialogVisible = ref(false)
-const currentLogText = ref('')
+const id = ref('')
 //===========================函数---开始==============================
 
 const handleDetail = (row: OperationLog) => {
@@ -305,7 +307,7 @@ const handleDelete = async (row: OperationLog) => {
 }
 function openAnalysis(row: any) {
   // 组装需要分析的文本（可根据实际字段调整）
-  currentLogText.value = row.jsonResult
+  id.value = row.id
   dialogVisible.value = true
 }
 //===========================函数---结束==============================

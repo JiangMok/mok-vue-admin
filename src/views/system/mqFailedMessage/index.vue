@@ -76,7 +76,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="270" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -84,6 +84,13 @@
               @click="handleDetail(row)"
             >
               详情
+            </el-button>
+            <el-button
+              type="primary"
+              size="small"
+              @click="openAnalysis(row)"
+            >
+              AI 分析
             </el-button>
             <el-button
               type="success"
@@ -185,6 +192,12 @@
         <el-button type="primary" @click="submitResolve" :loading="resolveLoading">确认</el-button>
       </template>
     </el-dialog>
+
+    <AiAnalysisDialog
+      v-model="dialogVisible"
+      :id="id"
+      type="MQ_FAILED_MESSAGE"
+    />
   </div>
 </template>
 
@@ -195,6 +208,7 @@ import { useUserStore } from '@/stores/user.ts'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { mqFailedMessageApi } from '@/api'
 import { formatDateTime, formatJson } from '@/utils/formatter'
+import AiAnalysisDialog from "@/components/common/AiAnalysisDialog.vue";
 
 const userStore = useUserStore()
 const loading = ref(false)
@@ -217,7 +231,13 @@ const resolveForm = reactive({
   remark: ''
 })
 const resolveTargetId = ref('')
-
+const dialogVisible = ref(false)
+const id = ref('')
+function openAnalysis(row: any) {
+  // 组装需要分析的文本（可根据实际字段调整）
+  id.value = row.id
+  dialogVisible.value = true
+}
 const pagination = reactive({
   pageNum: 1,
   pageSize: 10,

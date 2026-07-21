@@ -40,7 +40,8 @@ import {renderMarkdown} from '@/utils/markdown'
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
-  analysisText: string
+  id: string                 // 替换 analysisText
+  type: 'OPERATION_LOG' | 'MQ_FAILED_MESSAGE'  // 新增，限制合法值
   apiEndpoint?: string
   title?: string
 }>(), {
@@ -66,10 +67,12 @@ const renderedMarkdown = computed(() => {
 watch(
   () => props.modelValue,
   async (val) => {
-    if (val && props.analysisText) {
-      // 获取 token（按你的认证方式调整）
+    if (val && props.id && props.type) {
       const token = localStorage.getItem('token') || ''
-      await start(props.apiEndpoint, {content: props.analysisText}, token)
+      await start(props.apiEndpoint, {
+        id: props.id,
+        type: props.type
+      }, token)
     } else {
       stop()
     }
