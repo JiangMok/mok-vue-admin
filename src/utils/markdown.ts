@@ -6,8 +6,10 @@ import 'highlight.js/styles/github.css'
 export function renderMarkdown(content: string): string {
   if (!content) return ''
   try {
+    // 修复 AI 输出中 # 后缺空格的问题：###错误 → ### 错误
+    const normalized = content.replace(/^(#{1,6})([^\s#])/gm, '$1 $2')
     // marked v18: 选项通过 parse() 第二个参数传入，setOptions() 已移除
-    const rawHtml = marked.parse(content, {
+    const rawHtml = marked.parse(normalized, {
       breaks: true,
       gfm: true,
     }) as string

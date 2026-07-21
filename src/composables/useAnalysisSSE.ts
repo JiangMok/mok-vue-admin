@@ -34,6 +34,17 @@ export function useAnalysisSSE() {
         .pipeThrough(new TextDecoderStream())
         .getReader()
       let partialLine = ''
+      // 当前 SSE 事件内累积的 data 行
+      let currentEventLines: string[] = []
+
+      // flush 当前事件：将缓冲的 data 行用 \n 拼接写入 content
+      const flushEvent = () => {
+        if (currentEventLines.length > 0) {
+          content.value += currentEventLines.join('\n')
+          currentEventLines = []
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -42,6 +53,12 @@ export function useAnalysisSSE() {
         const lines = partialLine.split('\n')
         partialLine = lines.pop() || '' // 保留最后不完整行
         for (const line of lines) {
+          // 空行 = SSE 事件边界，flush 当前事件
+          if (line === '') {
+            flushEvent()
+            continue
+          }
+
           if (!line.startsWith('data:')) continue
 
           // 去掉 "data:" 前缀，再处理可选的前导空格
@@ -49,16 +66,17 @@ export function useAnalysisSSE() {
           if (data.startsWith(' ')) data = data.slice(1)
 
           // 结束信号
-          if (data.trim() === '[DONE]') return
-
-          // 空 data 行 → 保留为换行，维持段落分隔
-          if (data === '') {
-            content.value += '\n'
-          } else {
-            content.value += data
+          if (data.trim() === '[DONE]') {
+            flushEvent()
+            return
           }
+
+          // 压入当前事件的缓冲
+          currentEventLines.push(data)
         }
       }
+      // 流结束时 flush 剩余缓冲
+      flushEvent()
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         error.value = err.message || '未知错误'
