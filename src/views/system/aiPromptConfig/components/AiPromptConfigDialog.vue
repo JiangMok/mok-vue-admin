@@ -7,7 +7,7 @@
   >
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="110px" label-position="left">
       <el-form-item label="请求类型" prop="aiAnalysisRequestType">
-        <el-input v-model="formData.aiAnalysisRequestType" placeholder="请输入请求类型代号（如 OPERATION_LOG）" clearable :maxlength="64" />
+        <el-input v-model="formData.aiAnalysisRequestType" placeholder="请输入请求类型代号（如 OPERATION_LOG）" clearable :maxlength="64" :disabled="readonly" />
       </el-form-item>
       <el-form-item label="系统提示词" prop="systemPrompt">
         <el-input
@@ -16,15 +16,21 @@
           :rows="8"
           placeholder="请输入系统提示词"
           :maxlength="2000"
-          show-word-limit
+          :show-word-limit="!readonly"
+          :disabled="readonly"
         />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
+        <template v-if="readonly">
+          <el-button @click="handleClose">关闭</el-button>
+        </template>
+        <template v-else>
+          <el-button @click="handleClose">取消</el-button>
+          <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
+        </template>
       </span>
     </template>
   </el-dialog>
@@ -39,6 +45,7 @@ import type { AiSystemPromptConfig, AiSystemPromptConfigFormData } from '@/types
 interface Props {
   visible: boolean
   isEdit?: boolean
+  readonly?: boolean
   editData?: AiSystemPromptConfig | null
 }
 interface Emits {
@@ -46,7 +53,7 @@ interface Emits {
   (e: 'success'): void
 }
 
-const props = withDefaults(defineProps<Props>(), { visible: false, isEdit: false, editData: null })
+const props = withDefaults(defineProps<Props>(), { visible: false, isEdit: false, readonly: false, editData: null })
 const emit = defineEmits<Emits>()
 
 const formRef = ref<FormInstance>()
@@ -57,7 +64,10 @@ const formData = reactive<AiSystemPromptConfigFormData>({
   systemPrompt: ''
 })
 
-const dialogTitle = computed(() => props.isEdit ? '编辑提示词配置' : '新增提示词配置')
+const dialogTitle = computed(() => {
+  if (props.readonly) return '提示词配置详情'
+  return props.isEdit ? '编辑提示词配置' : '新增提示词配置'
+})
 const dialogVisible = computed({
   get: () => props.visible,
   set: (value) => emit('update:visible', value)
@@ -69,7 +79,7 @@ const formRules: FormRules = {
 }
 
 const initFormData = () => {
-  if (props.isEdit && props.editData) {
+  if ((props.isEdit || props.readonly) && props.editData) {
     formData.aiAnalysisRequestType = props.editData.aiAnalysisRequestType || ''
     formData.systemPrompt = props.editData.systemPrompt || ''
   } else {

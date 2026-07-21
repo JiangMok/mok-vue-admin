@@ -26,8 +26,9 @@
             {{ formatDateTime(row.updateTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button type="info" size="small" @click="handleDetail(row)">详情</el-button>
             <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -49,6 +50,7 @@
     <AiPromptConfigDialog
       v-model:visible="dialogVisible"
       :is-edit="isEditMode"
+      :readonly="isReadonly"
       :edit-data="currentEditData"
       @success="handleDialogSuccess"
     />
@@ -72,6 +74,7 @@ const total = ref(0)
 
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
+const isReadonly = ref(false)
 const currentEditData = ref<AiSystemPromptConfig | null>(null)
 
 const fetchList = async () => {
@@ -96,12 +99,21 @@ const fetchList = async () => {
 
 const handleAdd = () => {
   isEditMode.value = false
+  isReadonly.value = false
   currentEditData.value = null
   dialogVisible.value = true
 }
 
 const handleEdit = (row: AiSystemPromptConfig) => {
   isEditMode.value = true
+  isReadonly.value = false
+  currentEditData.value = { ...row }
+  dialogVisible.value = true
+}
+
+const handleDetail = (row: AiSystemPromptConfig) => {
+  isEditMode.value = false
+  isReadonly.value = true
   currentEditData.value = { ...row }
   dialogVisible.value = true
 }
