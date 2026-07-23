@@ -106,9 +106,9 @@
         </el-table-column>
         <el-table-column prop="businessType" label="业务类型" width="100">
           <template #default="{ row }">
-<!--            <el-tag :type="getBusinessType(row.businessType)">-->
-              {{ formatBusinessType(row.businessType) }}
-<!--            </el-tag>-->
+            <!--            <el-tag :type="getBusinessType(row.businessType)">-->
+            {{ formatBusinessType(row.businessType) }}
+            <!--            </el-tag>-->
           </template>
         </el-table-column>
 
@@ -274,10 +274,13 @@
           <el-image
             :src="currentFile?.fileUrl"
             fit="contain"
-            style="max-width: 100%; max-height: 70vh;"
             :preview-src-list="[currentFile?.fileUrl]"
             :initial-index="0"
           />
+          <p class="preview-hint">
+            <el-icon><ZoomIn /></el-icon>
+            点击图片可查看原图
+          </p>
         </div>
         <div v-else class="other-preview">
           <div class="no-preview">
@@ -308,7 +311,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Upload, Delete, Picture, VideoPlay, Document, Files
+  Upload, Delete, Picture, VideoPlay, Document, Files, ZoomIn
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user.ts'
 import type { FileItem } from '@/types'
@@ -904,6 +907,35 @@ const getBusinessType = (type: number) => {
   justify-content: center;
   align-items: center;
   min-height: 300px;
+  overflow: hidden;
+}
+
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.image-preview :deep(.el-image) {
+  max-width: 100%;
+  max-height: 65vh;
+}
+
+.image-preview :deep(.el-image__inner) {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+.preview-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
 }
 
 .no-preview {
