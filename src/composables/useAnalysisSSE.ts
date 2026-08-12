@@ -25,8 +25,19 @@ export function useAnalysisSSE() {
         signal: abortController.signal,
       })
 
-      if (!response.ok) {
-        throw new Error(`请求失败 (${response.status})`)
+      // 检查响应是否为 SSE 流（业务错误如防重复提交会返回 JSON 而非 SSE）
+      const contentType = response.headers.get('Content-Type') || ''
+      if (!contentType.includes('text/event-stream')) {
+        let errorMsg = `请求失败 (${response.status})`
+        try {
+          const errorData = await response.json()
+          if (errorData.msg) {
+            errorMsg = errorData.msg
+          }
+        } catch {
+          // 如果 response body 不是 JSON，使用默认错误信息
+        }
+        throw new Error(errorMsg)
       }
 
       // 使用 TextDecoderStream 自动处理 UTF-8 解码和流式行分割

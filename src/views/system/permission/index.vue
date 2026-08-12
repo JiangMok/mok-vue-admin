@@ -52,17 +52,16 @@
         v-loading="loading"
         style="width: 100%"
         row-key="id"
+        :indent="30"
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       >
-        <el-table-column prop="permissionName" label="权限名称" min-width="150">
+        <el-table-column prop="permissionName" label="权限名称" :min-width="nameColMinWidth">
           <template #default="{ row }">
             <div class="permission-name-cell">
-              <el-icon v-if="row.type === 1" class="type-icon">
-                <Menu />
+              <el-icon v-if="row.icon" class="type-icon">
+                <component :is="getIconComponent(row.icon)" />
               </el-icon>
-              <el-icon v-else-if="row.type === 2" class="type-icon">
-                <Operation />
-              </el-icon>
-              <el-icon v-else class="type-icon">
+              <el-icon v-else-if="row.type === 3" class="type-icon type-icon--api">
                 <Link />
               </el-icon>
               {{ row.permissionName }}
@@ -155,19 +154,6 @@
       </el-table>
     </div>
 
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="pagination.pageNum"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
-
     <!-- 新增/编辑对话框 -->
     <PermissionDialog
       v-model:visible="dialogVisible"
@@ -185,10 +171,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Menu, Operation, Link } from '@element-plus/icons-vue'
+import { Plus, Link } from '@element-plus/icons-vue'
 import { getIconComponent } from '@/utils/icons'
+import { buildPermissionTree } from '@/utils/tree'
 import { useUserStore } from '@/stores/user.ts'
 import type { PermissionItem } from '@/types'
 import { permissionApi } from '@/api'
@@ -203,6 +190,20 @@ const loading = ref(false)
 
 // 权限列表
 const tableList = ref<PermissionItem[]>([])
+
+// 递归计算树的最大深度
+const getMaxDepth = (nodes: any[], depth: number = 0): number => {
+  let maxDepth = depth
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      maxDepth = Math.max(maxDepth, getMaxDepth(node.children, depth + 1))
+    }
+  }
+  return maxDepth
+}
+
+// 权限名称列最小宽度：基础 200px + 每层 32px（含 indent 30px + 箭头空间）
+const nameColMinWidth = computed(() => 200 + getMaxDepth(tableList.value) * 32)
 
 // 搜索表单
 const searchForm = reactive({
@@ -222,37 +223,23 @@ const currentEditData = ref<any>(null)
 const detailDialogVisible = ref(false)
 const selectedTableData = ref<PermissionItem | null>(null)
 
-// 分页参数
-const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  total: 0
-})
-
 // 获取权限列表
 const fetchList = async () => {
   try {
     loading.value = true
 
-    // 构建请求参数
-    const params = {
-      pageNum: pagination.pageNum,
-      pageSize: pagination.pageSize,
-      ...searchForm
-    }
-
-    // 清除空值
-    const cleanParams: Record<string, any> = { ...params }
-    Object.keys(cleanParams).forEach(key => {
-      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
-        delete cleanParams[key]
+    // 构建搜索参数
+    const params: Record<string, any> = { ...searchForm }
+    Object.keys(params).forEach(key => {
+      if (params[key] === '' || params[key] === undefined || params[key] === null) {
+        delete params[key]
       }
     })
 
-    const res = await permissionApi.getPage(params)
-    // console.log('权限列表响应:', res)
-    tableList.value = res.data?.data || []
-    pagination.total = res.data?.total || 0
+    // 获取所有权限（树形展示不分页）
+    const res = await permissionApi.getPage({ pageNum: 1, pageSize: 999, ...params })
+    const flatList = res.data?.data || []
+    tableList.value = buildPermissionTree(flatList)
 
   } catch (error) {
     // console.error('获取权限列表失败:', error)
@@ -264,7 +251,6 @@ const fetchList = async () => {
 
 // 搜索
 const handleSearch = () => {
-  pagination.pageNum = 1
   fetchList()
 }
 
@@ -273,7 +259,6 @@ const handleReset = () => {
   searchForm.keyword = ''
   searchForm.params.status = undefined
   searchForm.params.type = undefined
-  pagination.pageNum = 1
   fetchList()
 }
 
@@ -325,19 +310,6 @@ const handleDelete = async (row: PermissionItem) => {
 const handleDialogSuccess = () => {
   fetchList()
   ElMessage.success('操作成功')
-}
-
-// 分页大小改变
-const handleSizeChange = (size: number) => {
-  pagination.pageSize = size
-  pagination.pageNum = 1
-  fetchList()
-}
-
-// 页码改变
-const handlePageChange = (page: number) => {
-  pagination.pageNum = page
-  fetchList()
 }
 
 // 获取类型文本（1=菜单 2=按钮 3=接口）
@@ -453,13 +425,18 @@ onMounted(() => {
 }
 
 .permission-name-cell {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  vertical-align: middle;
 }
 
 .type-icon {
   margin-right: 8px;
   color: #409eff;
+}
+
+.type-icon--api {
+  color: #909399;
 }
 
 .icon-cell {

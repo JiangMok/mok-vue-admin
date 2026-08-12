@@ -122,6 +122,8 @@
               v-if="row.status == 1"
               type="primary"
               size="small"
+              :loading="analysisLoading"
+              :disabled="analysisLoading"
               @click="openAnalysis(row)"
             >
               AI 分析
@@ -168,7 +170,7 @@
 
 <script setup lang="ts">
 import type {OperationLog} from "@/types";
-import {onMounted, reactive, ref} from "vue";
+import {onMounted, reactive, ref, watch} from "vue";
 import {useUserStore} from "@/stores/user.ts";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {operationLogApi} from "@/api";
@@ -234,6 +236,7 @@ const size = ref<'default'>('default')
 
 const dialogVisible = ref(false)
 const id = ref('')
+const analysisLoading = ref(false)
 //===========================函数---开始==============================
 
 const handleDetail = (row: OperationLog) => {
@@ -306,10 +309,16 @@ const handleDelete = async (row: OperationLog) => {
   }
 }
 function openAnalysis(row: any) {
-  // 组装需要分析的文本（可根据实际字段调整）
+  if (analysisLoading.value) return
+  analysisLoading.value = true
   id.value = row.id
   dialogVisible.value = true
 }
+
+// 对话框关闭时重置 loading 状态
+watch(dialogVisible, (val) => {
+  if (!val) analysisLoading.value = false
+})
 //===========================函数---结束==============================
 //===========================分页---开始==============================
 //分页参数

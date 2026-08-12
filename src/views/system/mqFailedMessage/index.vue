@@ -88,6 +88,8 @@
             <el-button
               type="primary"
               size="small"
+              :loading="analysisLoading"
+              :disabled="analysisLoading"
               @click="openAnalysis(row)"
             >
               AI 分析
@@ -203,7 +205,7 @@
 
 <script setup lang="ts">
 import type { MqFailedMessage } from '@/types'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user.ts'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { mqFailedMessageApi } from '@/api'
@@ -233,11 +235,18 @@ const resolveForm = reactive({
 const resolveTargetId = ref('')
 const dialogVisible = ref(false)
 const id = ref('')
+const analysisLoading = ref(false)
 function openAnalysis(row: any) {
-  // 组装需要分析的文本（可根据实际字段调整）
+  if (analysisLoading.value) return
+  analysisLoading.value = true
   id.value = row.id
   dialogVisible.value = true
 }
+
+// 对话框关闭时重置 loading 状态
+watch(dialogVisible, (val) => {
+  if (!val) analysisLoading.value = false
+})
 const pagination = reactive({
   pageNum: 1,
   pageSize: 10,

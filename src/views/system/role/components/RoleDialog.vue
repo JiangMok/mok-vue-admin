@@ -59,35 +59,21 @@
 
       <!-- 权限（多选） -->
       <el-form-item label="权限" prop="permissionIds">
-        <el-select
+        <el-tree-select
           v-model="formData.permissionIds"
+          :data="permissionTreeData"
           multiple
           filterable
+          check-strictly
+          :render-after-expand="false"
           placeholder="请选择权限"
           style="width: 100%"
           :loading="permissionLoading"
           :disabled="permissionLoading"
-        >
-          <el-option
-            v-for="permission in permissionList"
-            :key="permission.id"
-            :label="permission.permissionName"
-            :value="permission.id"
-          >
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-weight: 500;">{{ permission.permissionName}}</span>
-              <div style="display: flex; gap: 8px;">
-                <el-tag size="small" type="info">{{ permission.permissionCode}}</el-tag>
-                <el-tag
-                  size="small"
-                  :type="permission.status === 1 ? 'success' : 'danger'"
-                >
-                  {{ permission.status === 1 ? '启用' : '禁用' }}
-                </el-tag>
-              </div>
-            </div>
-          </el-option>
-        </el-select>
+          :props="{ label: 'permissionName', children: 'children' }"
+          node-key="id"
+          show-checkbox
+        />
 
         <!-- 已选权限展示 -->
         <div class="selected-roles" v-if="formData.permissionIds.length > 0">
@@ -124,6 +110,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { buildPermissionTree } from '@/utils/tree'
 import type {ApiPermission, RoleFormData, RoleItem, UserFormData, UserRequestData} from '@/types'
 import {permissionApi, roleApi, userApi} from '@/api'
 
@@ -164,6 +151,8 @@ const formData = reactive<RoleFormData>({
 // 角色列表
 const permissionList = ref<ApiPermission[]>([])
 const permissionLoading = ref(false)
+// 权限树形数据（用于 el-tree-select）
+const permissionTreeData = computed(() => buildPermissionTree(permissionList.value))
 // 提交加载状态
 const submitLoading = ref(false)
 
