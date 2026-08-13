@@ -2,11 +2,30 @@
   <div class="login-container">
     <!-- 左侧品牌面板 -->
     <div class="login-brand">
+      <div class="brand-orb orb-a"></div>
+      <div class="brand-orb orb-b"></div>
+      <div class="brand-particles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
       <div class="brand-inner">
-        <div class="brand-logo"></div>
-        <h1 class="brand-name">MOK</h1>
-        <p class="brand-subtitle">后台管理系统</p>
-        <p class="brand-tagline">精准监控 · 高效运维</p>
+        <img src="/logo.png" alt="MOK" class="brand-logo" />
+        <el-popover placement="bottom" :width="240" trigger="hover" popper-class="repo-pop">
+          <template #reference>
+            <p class="brand-tagline">基于MOK-Framework</p>
+          </template>
+          <div class="repo-list">
+            <a class="repo-item" href="https://github.com/JiangMok/mok-framework" target="_blank" rel="noopener">
+              <el-icon :size="14"><Link /></el-icon>
+              <span>脚手架源码（GitHub）</span>
+              <el-icon :size="12" class="repo-arrow"><TopRight /></el-icon>
+            </a>
+            <a class="repo-item" href="https://gitee.com/jiangmok/mok-framework" target="_blank" rel="noopener">
+              <el-icon :size="14"><Link /></el-icon>
+              <span>Gitee 镜像仓库</span>
+              <el-icon :size="12" class="repo-arrow"><TopRight /></el-icon>
+            </a>
+          </div>
+        </el-popover>
         <div class="brand-accent">
           <span></span>
           <span></span>
@@ -16,6 +35,7 @@
 
     <!-- 右侧表单区域 -->
     <div class="login-main">
+      <div class="main-decor-ring"></div>
       <div class="login-box">
         <div class="login-header">
           <h2>欢迎回来</h2>
@@ -79,7 +99,7 @@
       </div>
 
       <div class="copyright">
-        © 2025 MOK 后台管理系统
+        © 2025 MOK 工作台
       </div>
     </div>
   </div>
@@ -208,18 +228,19 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 暗色面板上的微弱点阵纹理 */
+/* 暗色面板上的微弱点阵纹理（缓慢漂移） */
 .login-brand::before {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
+  animation: brandGrid 25s linear infinite;
 }
 
-/* 右下角大号装饰几何 */
+/* 右下角大号装饰几何（脉动） */
 .login-brand::after {
   content: '';
   position: absolute;
@@ -227,49 +248,156 @@ onMounted(() => {
   bottom: -80px;
   width: 360px;
   height: 360px;
-  border: 2px solid rgba(91, 127, 188, 0.12);
+  border: 2px solid rgba(91, 127, 188, 0.25);
   border-radius: 50%;
   pointer-events: none;
+  animation: ringPulse 6s ease-in-out infinite;
 }
+
+/* 背景光斑 */
+.brand-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.orb-a {
+  width: 340px;
+  height: 340px;
+  background: #3b5998;
+  top: -80px;
+  left: -60px;
+  animation: orbDriftA 10s ease-in-out infinite alternate;
+}
+.orb-b {
+  width: 300px;
+  height: 300px;
+  background: #5b7fbc;
+  bottom: -60px;
+  right: -40px;
+  animation: orbDriftB 13s ease-in-out infinite alternate;
+}
+
+/* 上升粒子 */
+.brand-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.brand-particles span {
+  position: absolute;
+  bottom: -10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(91, 127, 188, 0.8);
+  box-shadow: 0 0 8px rgba(91, 127, 188, 0.6);
+  opacity: 0;
+  animation: particleRise linear infinite;
+}
+.brand-particles span:nth-child(1) { left: 10%; animation-duration: 7s;  animation-delay: 0s; }
+.brand-particles span:nth-child(2) { left: 26%; animation-duration: 9s;  animation-delay: 1.5s; }
+.brand-particles span:nth-child(3) { left: 44%; animation-duration: 8s;  animation-delay: 3s; }
+.brand-particles span:nth-child(4) { left: 63%; animation-duration: 10s; animation-delay: 0.8s; }
+.brand-particles span:nth-child(5) { left: 78%; animation-duration: 8.5s; animation-delay: 2.4s; }
+.brand-particles span:nth-child(6) { left: 91%; animation-duration: 11s; animation-delay: 4s; }
 
 .brand-inner {
   position: relative;
   z-index: 1;
   text-align: center;
   padding: 40px;
+  animation: brandFadeUp 0.8s ease-out both;
 }
 
-/* 六边形 Logo — 左侧主视觉 */
+/* Logo — 左侧主视觉（入场后持续漂浮，光晕同步呼吸） */
 .brand-logo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 28px;
-  background: linear-gradient(135deg, #5b7fbc 0%, #3b5998 100%);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  box-shadow: 0 0 40px rgba(91, 127, 188, 0.3);
+  width: 260px;
+  height: 260px;
+  margin: 0 auto 20px;
+  display: block;
+  object-fit: contain;
+  animation: brandFloat 6s ease-in-out 0.8s infinite;
 }
 
-.brand-name {
-  margin: 0;
-  font-size: 48px;
-  font-weight: 300;
-  color: #e2e8f0;
-  letter-spacing: 6px;
+/* ---- 动画关键帧 ---- */
+@keyframes brandGrid {
+  to { background-position: 28px 28px; }
 }
 
-.brand-subtitle {
-  margin: 8px 0 0 0;
-  font-size: 16px;
-  font-weight: 400;
-  color: #94a3b8;
-  letter-spacing: 2px;
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1);    opacity: 0.5; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+
+@keyframes orbDriftA {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(100px, 70px); }
+}
+
+@keyframes orbDriftB {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-80px, -50px); }
+}
+
+@keyframes particleRise {
+  0%   { transform: translateY(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.35; }
+  100% { transform: translateY(-105vh); opacity: 0; }
+}
+
+@keyframes brandFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ⑤ 登录卡片入场（延迟 0.15s，与左侧入场时序衔接） */
+@keyframes cardFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes brandFloat {
+  0%, 100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 24px rgba(91, 127, 188, 0.45));
+  }
+  50% {
+    transform: translateY(-16px);
+    filter: drop-shadow(0 0 48px rgba(91, 127, 188, 0.7));
+  }
+}
+
+/* 系统偏好减少动态效果时全部关闭 */
+@media (prefers-reduced-motion: reduce) {
+  .brand-inner,
+  .brand-logo,
+  .login-brand::before,
+  .login-brand::after,
+  .brand-orb,
+  .brand-particles span,
+  .brand-accent span,
+  .login-main::before,
+  .main-decor-ring,
+  .login-box {
+    animation: none !important;
+  }
 }
 
 .brand-tagline {
-  margin: 28px 0 0 0;
+  margin: 0;
   font-size: 13px;
   color: #64748b;
   letter-spacing: 1px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.brand-tagline:hover {
+  color: #94a3b8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* 装饰线 */
@@ -284,6 +412,16 @@ onMounted(() => {
   display: block;
   height: 2px;
   border-radius: 2px;
+  animation: accentPulse 2s ease-in-out infinite;
+}
+
+.brand-accent span:last-child {
+  animation-delay: 0.3s;
+}
+
+@keyframes accentPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
 }
 
 .brand-accent span:first-child {
@@ -305,16 +443,70 @@ onMounted(() => {
   align-items: center;
   background: var(--app-bg);
   padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ① 钢蓝点阵纹理（与左侧面板镜像，缓慢漂移） */
+.login-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(59, 89, 152, 0.10) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  animation: brandGrid 25s linear infinite;
+}
+
+/* ② 卡片后方径向微光 */
+.login-main::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 620px;
+  height: 480px;
+  background: radial-gradient(ellipse at center, rgba(59, 89, 152, 0.10), transparent 65%);
+  pointer-events: none;
+}
+
+/* ③ 左上角装饰圆环（与左侧右下角圆环对角线对称） */
+.main-decor-ring {
+  position: absolute;
+  left: -60px;
+  top: -80px;
+  width: 360px;
+  height: 360px;
+  border: 2px solid rgba(59, 89, 152, 0.10);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ringPulse 6s ease-in-out infinite;
 }
 
 /* ---- 登录卡片 ---- */
 .login-box {
+  position: relative;
+  overflow: hidden;
   width: 380px;
   padding: 40px 36px 32px;
   background: var(--app-bg-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--app-border);
+  animation: cardFadeUp 0.7s ease-out 0.15s both;
+}
+
+/* ④ 卡片顶部钢蓝渐变强调线 */
+.login-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #5b7fbc, #3b5998);
 }
 
 /* ---- 头部 ---- */
@@ -474,9 +666,9 @@ onMounted(() => {
   }
 
   .brand-logo {
-    width: 44px;
-    height: 44px;
-    margin-bottom: 18px;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 14px;
   }
 
   .brand-name {
@@ -512,5 +704,33 @@ onMounted(() => {
     width: 100px;
     min-width: 100px;
   }
+}
+</style>
+
+<style>
+/* 仓库链接弹窗：el-popover 渲染在 body 下，scoped 样式无法命中，需全局样式 */
+.repo-pop .repo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.repo-pop .repo-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--app-text-secondary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.repo-pop .repo-item:hover {
+  color: var(--app-accent);
+  background: var(--app-accent-light);
+}
+.repo-pop .repo-item .repo-arrow {
+  margin-left: auto;
+  color: var(--app-text-muted);
 }
 </style>
