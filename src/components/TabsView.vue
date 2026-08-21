@@ -16,7 +16,7 @@
         <template #label>
           <el-dropdown
             trigger="contextmenu"
-            @command="(command) => handleContextMenu(command, tab)"
+            @command="handleDropdownCommand($event, tab)"
           >
             <span class="tab-label">
               <el-icon v-if="tab.icon" size="14">
@@ -84,6 +84,10 @@ const handleTabClick = (tab: any) => {
 const handleTabRemove = (path: string) => {
   if (isFixedTab(path)) return
   closeTab(path)
+}
+
+const handleDropdownCommand = (command: string | number | object, tab: TabItem) => {
+  handleContextMenu(String(command), tab)
 }
 
 const handleContextMenu = (command: string, tab: TabItem) => {

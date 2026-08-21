@@ -111,7 +111,7 @@ import {useRouter} from 'vue-router'
 import {Lock, Picture, User} from '@element-plus/icons-vue'
 import {useUserStore} from '@/stores/user'
 import {ElMessage, type FormInstance, type FormRules} from "element-plus";
-import {authApi, captchaApi} from "@/api";
+import {authApi, captchaApi} from "@/api/modules/auth";
 
 const loginForm = reactive({
   username: '',

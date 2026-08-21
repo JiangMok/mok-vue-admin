@@ -282,7 +282,6 @@ const HealthCard = (props: any, { slots }: any) => {
   })
 }
 HealthCard.props = { icon: String, label: String, item: Object }
-HealthCard.emits = []
 
 // ────────────── 数据 ──────────────
 const systemInfo = reactive<any>({
@@ -310,7 +309,8 @@ const stopAutoRefresh = () => {
 }
 const onAutoRefreshToggle = (val: boolean) => {
   localStorage.setItem(AUTO_KEY, String(val))
-  val ? startAutoRefresh() : stopAutoRefresh()
+  if (val) startAutoRefresh()
+  else stopAutoRefresh()
 }
 const refreshData = () => {
   fetchHealthData()
@@ -383,7 +383,7 @@ const getRespMs = (item: any): number => {
   const rt = item?.details?.responseTime
   if (!rt) return 0
   const match = String(rt).match(/([\d.]+)/)
-  return match ? parseFloat(match[1]) : 0
+  return match?.[1] ? parseFloat(match[1]) : 0
 }
 
 const formatTimestamp = (ts: number) => {

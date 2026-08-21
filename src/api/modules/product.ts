@@ -29,7 +29,7 @@ export const productApi = {
   clearSeckill: (id: string) => {
     return request.post(`/product/clearSeckill/${id}`)
   },
-  getCoupons: (productId: string): Promise<ApiResponse<CouponItem>> => {
+  getCoupons: (productId: string): Promise<ApiResponse<CouponItem[]>> => {
     return request.get(`/coupon/getCoupons/${productId}`)
   }
 }

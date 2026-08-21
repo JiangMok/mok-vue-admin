@@ -20,6 +20,11 @@ export const operationLogApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
+    keyword?: string
+    businessType?: string
+    status?: number
+    startTime?: string
+    endTime?: string
   }): Promise<ApiResponse<PageResponse<OperationLog>>> => {
     return request.post('/operation-log/page', params)
   },

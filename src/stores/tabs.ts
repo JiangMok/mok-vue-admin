@@ -1,15 +1,16 @@
 // src/stores/tabs.ts
 import { defineStore } from 'pinia'
-import { type RouteLocationNormalized } from 'vue-router'
+import type { Component } from 'vue'
+import type { LocationQuery, RouteLocationNormalized, RouteParamsGeneric } from 'vue-router'
 
 export interface TabItem {
   path: string
   name?: string
   title: string
-  icon?: string | object // 图标名称或组件
+  icon?: string | Component // 图标名称或组件
   fullPath?: string
-  query?: Record<string, never>
-  params?: Record<string, never>
+  query?: LocationQuery
+  params?: RouteParamsGeneric
 }
 
 export const useTabsStore = defineStore('tabs', {
@@ -28,11 +29,11 @@ export const useTabsStore = defineStore('tabs', {
       if (exists) return
 
       const title = (route.meta?.title as string) || route.name?.toString() || '未知'
-      const icon = route.meta?.icon // 假设 meta 中有 icon 字段
+      const icon = route.meta?.icon as string | Component | undefined
 
       const tab: TabItem = {
         path: route.path,
-        name: route.name as string,
+        name: route.name?.toString(),
         title,
         icon, // 存储图标（可以是字符串或组件）
         fullPath: route.fullPath,
@@ -60,6 +61,7 @@ export const useTabsStore = defineStore('tabs', {
       if (index === -1) return
 
       const tab = this.visitedTabs[index]
+      if (!tab) return
       if (tab.name && this.cachedTabs.includes(tab.name)) {
         this.cachedTabs = this.cachedTabs.filter(name => name !== tab.name)
       }

@@ -9,6 +9,9 @@ export const userApi = {
     pageNum: number
     pageSize: number
     username?: string
+    keyword?: string
+    status?: number
+    params?: Record<string, unknown>
   }): Promise<ApiResponse<PageResponse<UserInfo>>> => {
     return request.post('/user/page', params)
   },

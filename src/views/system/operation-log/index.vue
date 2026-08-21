@@ -16,7 +16,7 @@
         </el-form-item>
 
         <el-form-item label="业务类型">
-          <el-select v-model="searchForm.params.businessType" placeholder="操作类别" clearable
+          <el-select v-model="searchForm.businessType" placeholder="操作类别" clearable
                      style="width: 120px">
             <el-option label="全部" :value="''"/>
             <el-option label="查询" :value="'查询'"/>
@@ -28,11 +28,12 @@
         </el-form-item>
 
         <el-form-item label="操作状态">
-          <el-select v-model="searchForm.params.status" placeholder="操作状态" clearable
+          <el-select v-model="searchForm.status" placeholder="操作状态" clearable
                      style="width: 120px">
             <el-option label="全部" :value="''"/>
             <el-option label="正常" :value="0"/>
             <el-option label="异常" :value="1"/>
+            <el-option label="业务失败" :value="2"/>
           </el-select>
         </el-form-item>
 
@@ -86,8 +87,8 @@
         <!--        <el-table-column prop="jsonResult" label="返回参数" width=""/>-->
         <el-table-column prop="status" label="操作状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'danger' : 'success'">
-              {{ row.status === 1 ? '异常' : '正常' }}
+            <el-tag :type="getStatusTag(row.status)">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -119,7 +120,7 @@
 
 
             <el-button
-              v-if="row.status == 1"
+              v-if="row.status !== 0"
               type="primary"
               size="small"
               :loading="analysisLoading"
@@ -188,10 +189,8 @@ const operationLogList = ref<OperationLog[]>([])
 //搜索表单
 const searchForm = reactive({
   keyword: '',
-  params: {
-    businessType: undefined,
-    status: undefined
-  }
+  businessType: undefined as string | undefined,
+  status: undefined as number | undefined
 })
 //时间表单
 const timeForm = reactive({
@@ -396,11 +395,24 @@ const cleanBefore = async () => {
  */
 const handleReset = () => {
   searchForm.keyword = ''
-  searchForm.params.status = undefined
-  searchForm.params.businessType = undefined
+  searchForm.status = undefined
+  searchForm.businessType = undefined
   pagination.pageNum = 1
   fetchList()
 }
+
+const getStatusTag = (status: number) => {
+  if (status === 0) return 'success'
+  if (status === 2) return 'warning'
+  return 'danger'
+}
+
+const getStatusText = (status: number) => {
+  if (status === 0) return '正常'
+  if (status === 2) return '业务失败'
+  return '系统异常'
+}
+
 /**
  * 格式化日期
  */

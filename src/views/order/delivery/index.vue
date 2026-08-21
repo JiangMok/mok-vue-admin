@@ -164,7 +164,7 @@
         label-width="100px"
       >
         <el-form-item label="发货单号">
-          <el-input v-model="currentDelivery.deliveryNo" disabled />
+          <el-input :model-value="currentDelivery?.deliveryNo || ''" disabled />
         </el-form-item>
         <el-form-item label="物流公司" prop="deliveryCompany">
           <el-input v-model="shipForm.deliveryCompany" placeholder="请输入物流公司" />

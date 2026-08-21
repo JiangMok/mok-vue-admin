@@ -4,10 +4,14 @@ import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'a
 import axios from 'axios';
 // 3. 导入 Element Plus 的消息提示组件，用于在页面上弹出错误/成功提示
 import { ElMessage } from 'element-plus';
-// 4. 导入 Vue Router 的路由实例，用于在 token 过期时跳转到登录页
-import router from '@/router';
-// 5. 导入 Pinia 的用户状态管理仓库，用于读取和清除用户的登录信息
-import { useUserStore } from '@/stores/user';
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
+
+interface PendingRequest {
+  resolve: (token: string) => void
+  reject: (error: unknown) => void
+}
 
 // 6. 配置接口的基础地址：优先从环境变量中读取，如果没配置则默认使用 '/api'
 //    环境变量通常定义在 .env.development 或 .env.production 文件中
@@ -37,7 +41,13 @@ const refreshAxios = axios.create({
 
 // 9. 全局状态变量（定义在模块顶层，在整个应用生命周期内共享）
 let isRefreshing = false;                         // 标记是否正在刷新 token，防止同时发送多个刷新请求
-let requests: Array<(token: string) => void> = []; // 请求队列：存储刷新期间到达的其他请求，等刷新成功后再重发它们
+let requests: PendingRequest[] = [];              // 刷新期间等待重试的请求
+
+function clearSessionAndRedirectToLogin() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
+  window.location.assign('/login')
+}
 
 /**
  * 10. 刷新 token 函数
@@ -82,17 +92,18 @@ async function refreshToken(): Promise<string> {
  *     参数 originalRequest：原始的失败请求配置对象（包含 url、headers、data 等）
  *     返回值：Promise<any>，即重试请求的结果
  */
-async function handleTokenRefreshAndRetry(originalRequest: any): Promise<any> {
+async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfig): Promise<unknown> {
   // 11.1 如果当前正在刷新 token，那么就不能再发起新的刷新请求
   if (isRefreshing) {
     // 11.2 返回一个 Promise，并将当前请求加入等待队列
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // 11.3 往队列中添加一个回调函数，该回调会在刷新成功后被执行，参数是新 token
-      requests.push((newToken: string) => {
-        // 11.4 用新 token 更新原始请求的 Authorization 头
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        // 11.5 重新发送原始请求，并用 resolve 把结果返回给最初的调用者
-        resolve(service(originalRequest));
+      requests.push({
+        resolve: (newToken: string) => {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          resolve(service(originalRequest));
+        },
+        reject
       });
     });
   }
@@ -105,7 +116,7 @@ async function handleTokenRefreshAndRetry(originalRequest: any): Promise<any> {
     const newToken = await refreshToken();
 
     // 11.8 刷新成功：遍历请求队列，依次执行队列中的每一个回调函数，传入新 token
-    requests.forEach(cb => cb(newToken));
+    requests.forEach(request => request.resolve(newToken));
     // 11.9 清空请求队列（所有等待的请求都已经用新 token 重发了）
     requests = [];
 
@@ -118,23 +129,11 @@ async function handleTokenRefreshAndRetry(originalRequest: any): Promise<any> {
     ElMessage.error("登录信息失效,请重新登录")
 
     // 11.12 清空请求队列（这些请求已经没有重试的必要了，因为刷新失败了）
-    requests.forEach(cb => {
-      // 这里什么也不做，只是遍历一下，实际已在下一行置空队列
-    });
+    requests.forEach(request => request.reject(refreshError));
     requests = []; // 清空队列，防止内存泄漏
 
     // 11.13 清除 Pinia store 中的用户状态（token、用户信息、权限菜单等）
-    const userStore = useUserStore();
-    userStore.clear();  // 只清空状态，不调用 logout()，因为 logout() 内部会刷新页面，影响体验
-
-    // 11.14 跳转到登录页面
-    //      先用 router.replace，如果失败（如路由冲突）则用 location.href 兜底
-    router.replace('/login').then(() => {
-      console.log('✅ 路由跳转成功');
-    }).catch(() => {
-      // 路由跳转失败时，用原生方式强制跳转，确保用户一定能到登录页
-      window.location.href = '/login';
-    });
+    await clearSessionAndRedirectToLogin();
 
     // 11.15 将刷新失败的错误继续向上抛出，让调用方知道本次请求已失败
     return Promise.reject(refreshError);
@@ -182,7 +181,7 @@ service.interceptors.response.use(
     if (data.code !== undefined && data.code !== 200) {
       // 和后端约定：当 code 为 3002 时，表示 accessToken 过期了，需要刷新 token
       if (data.code === 3002) {
-        const originalRequest = response.config;
+        const originalRequest = response.config as RetryableRequestConfig;
         // 添加 _retry 标记，防止同一个请求因为刷新后再次失败而陷入无限重试
         if (!originalRequest._retry) {
           originalRequest._retry = true;
@@ -202,11 +201,12 @@ service.interceptors.response.use(
   },
   // 第二个参数：响应失败的处理函数（HTTP 状态码非 2xx，如 401、404、500 等）
   async (error) => {
-    const originalRequest = error.config;   // 获取导致错误的原始请求配置
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
 
     // 如果 HTTP 状态码是 401（Unauthorized）或者 3002（后端自定义），都视为 token 无效/过期
     // 并且该请求还没有被标记为已重试
-    if ((error.response?.status === 401 || error.response?.status === 3002) && !originalRequest._retry) {
+    if ((error.response?.status === 401 || error.response?.status === 3002)
+        && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;   // 标记已重试，防止死循环
 
       // 再次检查本地是否有 token 和 refreshToken
@@ -214,8 +214,9 @@ service.interceptors.response.use(
       const refreshTokenStr = localStorage.getItem('refreshToken');
       if (!token || !refreshTokenStr) {
         // 如果连 token 都没有，说明用户确实未登录，直接清空存储并跳转登录
-        localStorage.clear();
-        router.replace('/login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        await clearSessionAndRedirectToLogin();
         return Promise.reject(error);
       }
 

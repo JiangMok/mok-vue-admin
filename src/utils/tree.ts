@@ -19,8 +19,10 @@ export function buildPermissionTree<T extends { id: string; parentId: string; ch
   // 第二次遍历：按 parentId 挂载
   for (const item of list) {
     const node = map[item.id]
-    if (item.parentId && item.parentId !== rootParentId && map[item.parentId]) {
-      map[item.parentId].children!.push(node)
+    if (!node) continue
+    const parent = map[item.parentId]
+    if (item.parentId && item.parentId !== rootParentId && parent) {
+      parent.children!.push(node)
     } else {
       tree.push(node)
     }

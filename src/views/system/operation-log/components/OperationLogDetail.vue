@@ -26,8 +26,8 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="操作状态" label-align="right" align="left">
-            <el-tag :type="operationLogInfo.status === 0 ? 'success' : 'danger'">
-              {{ operationLogInfo.status === 0 ? '成功' : '失败' }}
+            <el-tag :type="getStatusTag(operationLogInfo.status)">
+              {{ getStatusText(operationLogInfo.status) }}
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="操作时间" label-align="right" align="left">
@@ -252,13 +252,26 @@ const getMethodTag = (method: string) => {
   return methodMap[method] || 'info'
 }
 
-const getOperatorTypeText = (type: number) => {
-  const typeMap: Record<number, string> = {
-    0: '其他',
-    1: '后台用户',
-    2: '手机端用户'
+const getOperatorTypeText = (type: string) => {
+  const typeMap: Record<string, string> = {
+    ADMIN: '后台用户',
+    USER: '普通用户',
+    SYSTEM: '系统',
+    UNKNOWN: '未知'
   }
   return typeMap[type] || '未知'
+}
+
+const getStatusTag = (status: number) => {
+  if (status === 0) return 'success'
+  if (status === 2) return 'warning'
+  return 'danger'
+}
+
+const getStatusText = (status: number) => {
+  if (status === 0) return '成功'
+  if (status === 2) return '业务失败'
+  return '系统失败'
 }
 
 const parseJsonResult = (jsonString: string) => {

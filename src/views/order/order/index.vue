@@ -228,14 +228,8 @@ const fetchList = async () => {
       }
     }
     const res = await orderApi.getList(params)
-    // 根据实际接口结构调整
-    if (res.data && res.data.data) {
-      tableList.value = res.data.data || []
-      pagination.total = res.data.total || 0
-    } else {
-      tableList.value = res.data || []
-      pagination.total = res.data.total || 0
-    }
+    tableList.value = res.data?.data || []
+    pagination.total = res.data?.total || 0
   } catch (error) {
     ElMessage.error('获取订单列表失败')
   } finally {

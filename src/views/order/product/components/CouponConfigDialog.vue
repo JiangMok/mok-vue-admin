@@ -37,7 +37,7 @@
             <template #default="{ row }">
               <el-checkbox
                 :model-value="selectedIds.has(row.id)"
-                @change="(val) => handleCheckboxChange(row, val)"
+                @change="handleCheckboxChange(row, $event)"
               />
             </template>
           </el-table-column>
@@ -125,21 +125,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Remove } from '@element-plus/icons-vue'
 import { couponApi, productApi } from '@/api/index.ts'
 import { debounce } from 'lodash-es'
-
-interface CouponItem {
-  id: string
-  couponName: string
-  couponType: 1 | 2 | 3
-  thresholdAmount?: number
-  discountAmount?: number
-  discountRate?: number
-  totalQuantity: number
-  remainingQuantity: number
-  perLimit: number
-  startTime: string
-  endTime: string
-  status: 1 | 0
-}
+import type { CouponItem } from '@/types'
 
 const props = defineProps<{
   visible: boolean
@@ -259,10 +245,10 @@ const fetchSelectedCoupons = async () => {
 }
 
 // 处理复选框变化（用户勾选/取消勾选）
-const handleCheckboxChange = (row: CouponItem, checked: boolean) => {
+const handleCheckboxChange = (row: CouponItem, checked: unknown) => {
   // 由于 Set 是响应式的，需要重新赋值才能触发视图更新
   const newSet = new Set(selectedIds.value)
-  if (checked) {
+  if (Boolean(checked)) {
     newSet.add(row.id)
     couponDetailCache.value.set(row.id, row) // 更新缓存
   } else {

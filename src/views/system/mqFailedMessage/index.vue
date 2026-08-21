@@ -256,7 +256,12 @@ const pagination = reactive({
 const fetchList = async () => {
   try {
     loading.value = true
-    const params: Record<string, any> = {
+    const params: {
+      pageNum: number
+      pageSize: number
+      keyword?: string
+      params?: Record<string, any>
+    } = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
       keyword: searchForm.keyword || undefined,
@@ -264,16 +269,16 @@ const fetchList = async () => {
     }
 
     if (timeRange.value && timeRange.value.length === 2) {
-      params.params.startTime = timeRange.value[0]
-      params.params.endTime = timeRange.value[1]
+      params.params!.startTime = timeRange.value[0]
+      params.params!.endTime = timeRange.value[1]
     }
 
-    Object.keys(params.params).forEach(key => {
-      if (params.params[key] === '' || params.params[key] === undefined || params.params[key] === null) {
-        delete params.params[key]
+    Object.keys(params.params!).forEach(key => {
+      if (params.params![key] === '' || params.params![key] === undefined || params.params![key] === null) {
+        delete params.params![key]
       }
     })
-    if (Object.keys(params.params).length === 0) {
+    if (Object.keys(params.params!).length === 0) {
       delete params.params
     }
 

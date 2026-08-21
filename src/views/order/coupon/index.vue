@@ -216,19 +216,17 @@ const pagination = reactive({
 const fetchList = async () => {
   try {
     loading.value = true
-    const params = {
+    const params: {
+      pageNum: number
+      pageSize: number
+      params: Record<string, unknown>
+    } = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
       params:{
         ...searchForm
       }
     }
-    // 清理空值
-    Object.keys(params).forEach(key => {
-      if (params[key] === '' || params[key] === undefined || params[key] === null) {
-        delete params[key]
-      }
-    })
     const res = await couponApi.getPage(params)
     // 根据实际接口嵌套结构解析
     tableList.value = res.data?.data || []

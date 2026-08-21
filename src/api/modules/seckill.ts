@@ -8,9 +8,9 @@ export const seckillApi = {
   seckillOrder: (
     productId: string,
     quantity: number,
-    verifyCode: string
+    verifyCode?: string
   ): Promise<ApiResponse> => {
-    return request.post(`/seckill/order?productId=${productId}&quantity=${quantity}&verifyCode=${verifyCode}`)
+    return request.post(`/seckill/order?productId=${productId}&quantity=${quantity}&verifyCode=${verifyCode ?? ''}`)
   },
   getSeckillVerifyCode: (
     productId: string

@@ -7,7 +7,7 @@ export interface OperationLog {
   businessType: string
   method: string
   requestMethod: string
-  operatorType: number
+  operatorType: string
   operatorId: string
   operatorName: string
   deptName: string

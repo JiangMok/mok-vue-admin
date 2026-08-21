@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: isDevelopment ? {
+      // 绑定 IPv4 回环：避免 Node 将 localhost 解析为 ::1 而只监听 IPv6
+      // （代理工具 TUN 模式会在 WFP 层封锁 IPv6，导致 ::1 不可达）
+      host: '127.0.0.1',
       port: 5173,
       proxy: {
         '/api': {

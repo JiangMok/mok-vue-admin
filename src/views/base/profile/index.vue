@@ -263,6 +263,11 @@ const submitPasswordChange = () => {
         id: userInfo.id,
         username: userInfo.username,
         nickname: userInfo.nickname,
+        phone: userInfo.phone,
+        email: userInfo.email,
+        avatar: userInfo.avatar || '',
+        status: userInfo.status,
+        roleIds: [],
         password: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword
       }

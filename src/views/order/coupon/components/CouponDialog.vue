@@ -203,24 +203,33 @@ const formRules: FormRules = {
   couponType: [{ required: true, message: '请选择优惠券类型', trigger: 'change' }],
   thresholdAmount: [
     {
-      required: (rule, value, callback) => formData.couponType === 1,
-      message: '请输入使用门槛',
+      validator: (_rule, value, callback) => {
+        if (formData.couponType === 1 && (value === null || value === undefined)) {
+          callback(new Error('请输入使用门槛'))
+        } else callback()
+      },
       trigger: 'blur'
     },
     { type: 'number', min: 0.01, message: '门槛金额必须大于0', trigger: 'blur' }
   ],
   discountAmount: [
     {
-      required: (rule, value, callback) => formData.couponType === 1 || formData.couponType === 3,
-      message: '请输入优惠金额',
+      validator: (_rule, value, callback) => {
+        if ([1, 3].includes(formData.couponType) && (value === null || value === undefined)) {
+          callback(new Error('请输入优惠金额'))
+        } else callback()
+      },
       trigger: 'blur'
     },
     { type: 'number', min: 0.01, message: '优惠金额必须大于0', trigger: 'blur' }
   ],
   discountRate: [
     {
-      required: (rule, value, callback) => formData.couponType === 2,
-      message: '请输入折扣率',
+      validator: (_rule, value, callback) => {
+        if (formData.couponType === 2 && (value === null || value === undefined)) {
+          callback(new Error('请输入折扣率'))
+        } else callback()
+      },
       trigger: 'blur'
     },
     { type: 'number', min: 1, max: 99, message: '折扣率必须在1~99之间', trigger: 'blur' }
@@ -267,8 +276,8 @@ const handleTypeChange = () => {
 // 日期范围变化处理
 const handleDateRangeChange = (val: string[]) => {
   if (val && val.length === 2) {
-    formData.startTime = val[0]
-    formData.endTime = val[1]
+    formData.startTime = val[0]!
+    formData.endTime = val[1]!
   } else {
     formData.startTime = ''
     formData.endTime = ''

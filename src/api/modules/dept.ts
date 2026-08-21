@@ -22,13 +22,13 @@ export const deptApi = {
   getById: (id: string): Promise<ApiResponse<DeptItem>> => {
     return request.get(`/dept/${id}`)
   },
-  add: (data: Partial<DeptItem>) => {
+  add: (data: Partial<DeptItem>): Promise<ApiResponse> => {
     return request.post('/dept/add', data)
   },
-  update: (data: Partial<DeptItem>) => {
+  update: (data: Partial<DeptItem>): Promise<ApiResponse> => {
     return request.put('/dept/update', data)
   },
-  delete: (id: string) => {
+  delete: (id: string): Promise<ApiResponse> => {
     return request.delete(`/dept/delete/${id}`)
   }
 }

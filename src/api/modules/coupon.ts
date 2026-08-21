@@ -1,5 +1,5 @@
 import request from "@/utils/request.ts"
-import type { ApiResponse, CouponFormData, PageResponse, ProductItem } from '@/types'
+import type { ApiResponse, CouponFormData, CouponItem, PageResponse } from '@/types'
 
 /**
  * 优惠券管理API
@@ -8,7 +8,8 @@ export const couponApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
-  }): Promise<ApiResponse<PageResponse<ProductItem>>> => {
+    params?: Record<string, unknown>
+  }): Promise<ApiResponse<PageResponse<CouponItem>>> => {
     return request.post('/coupon/list', params)
   },
   add(data: CouponFormData) {

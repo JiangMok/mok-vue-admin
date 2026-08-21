@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { UserInfo, MenuItem, ApiPermission } from '@/types'
-import { authApi, permissionApi } from "@/api"
+import { authApi } from "@/api/modules/auth"
+import { permissionApi } from "@/api/modules/permission"
 
 
 export const useUserStore = defineStore('user', {

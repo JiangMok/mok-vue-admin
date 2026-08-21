@@ -196,7 +196,7 @@ const searchDeptTree = ref<DeptItem[]>([])
 const fetchUserList = async () => {
   try {
     loading.value = true
-    const params: Record<string, any> = {
+    const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
       keyword: searchForm.keyword,

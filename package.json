@@ -8,11 +8,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "run-p \"build-only {@}\" --",
+    "build": "run-s type-check lint build-only",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix --cache"
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --fix --cache"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

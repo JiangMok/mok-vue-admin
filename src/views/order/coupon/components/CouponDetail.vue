@@ -126,7 +126,9 @@ const initDetailData = () => {
 const handleClose = () => {
   dialogVisible.value = false
   // 重置数据
-  Object.keys(detailData).forEach(key => delete detailData[key])
+  for (const key of Object.keys(detailData) as Array<keyof typeof detailData>) {
+    delete detailData[key]
+  }
 }
 
 watch(() => props.visible, (val) => {

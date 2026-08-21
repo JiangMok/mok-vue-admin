@@ -17,4 +17,16 @@ export default defineConfigWithVueTs(
 
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
+
+  {
+    name: 'app/project-rules',
+    rules: {
+      'vue/multi-word-component-names': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        caughtErrors: 'none',
+      }],
+    },
+  },
 )

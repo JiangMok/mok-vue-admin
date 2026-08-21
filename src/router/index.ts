@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from "@/stores/user.ts";
 import type {MenuItem} from "@/types";
-import {menuApi, permissionApi} from "@/api";
+import {menuApi, permissionApi} from "@/api/modules/permission";
 import Layout from "@/layout/Layout.vue";
 
 // 在文件顶部，在函数外部定义
