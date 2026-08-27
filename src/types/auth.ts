@@ -29,4 +29,5 @@ export interface LoginResponse {
   nickname: string
   userId: string
   avatar: string
+  roles: string[]
 }

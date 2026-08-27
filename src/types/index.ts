@@ -7,9 +7,9 @@
 
 export type { ApiResponse, PageResponse } from './common'
 export type { CaptchaResponse, LoginParams, LoginResponse } from './auth'
-export type { UserInfo, ProfileUserInfo, UserFormData, UserRequestData } from './user'
+export type { UserInfo, ProfileUserInfo, UserFormData, UserRequestData, PasswordUpdateRequest } from './user'
 export type { RoleItem, RoleFormData } from './role'
-export type { ApiPermission, MenuItem, PermissionItem, PermissionFormData } from './permission'
+export type { ApiPermission, MenuItem, PermissionItem, PermissionFormData, PermissionTreeNode } from './permission'
 export type { DeptItem } from './dept'
 export type { FileItem, FileUploadResponse, FileFormData } from './file'
 export type { OperationLog } from './operation-log'

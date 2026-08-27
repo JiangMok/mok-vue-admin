@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia'
-import type { UserInfo, MenuItem, ApiPermission } from '@/types'
-import { authApi } from "@/api/modules/auth"
-import { permissionApi } from "@/api/modules/permission"
+import type { UserInfo, MenuItem, ApiPermission, LoginResponse } from '@/types'
+
+const readStoredRoles = (): string[] => {
+  try {
+    const roles = JSON.parse(localStorage.getItem('roles') || '[]')
+    return Array.isArray(roles)
+      ? roles.filter((role): role is string => typeof role === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
 
 
 export const useUserStore = defineStore('user', {
@@ -9,6 +18,7 @@ export const useUserStore = defineStore('user', {
     userInfo: null as UserInfo | null,
     token: localStorage.getItem('token') || '',
     refreshToken: localStorage.getItem('refreshToken') || '',
+    roles: readStoredRoles(),
     menus: [] as MenuItem[],
     apiPermissions: [] as ApiPermission[],  // 新增：API权限列表
     permissions: [] as string[]  // 合并后的权限列表（包含菜单code和API权限code）
@@ -18,7 +28,9 @@ export const useUserStore = defineStore('user', {
     isLoggedIn: (state) => !!state.token,
     nickname: (state) => state.userInfo?.nickname || '',
     userId: (state) => state.userInfo?.id || '',
-    avatar: (state) => state.userInfo?.avatar || ''
+    avatar: (state) => state.userInfo?.avatar || '',
+    isGuest: (state) => state.roles.includes('ROLE_GUEST'),
+    isAdmin: (state) => state.roles.includes('ROLE_ADMIN')
   },
 
   actions: {
@@ -131,9 +143,10 @@ export const useUserStore = defineStore('user', {
     },
 
     // 登录成功后的处理
-    async afterLogin(data: any) {
+    async afterLogin(data: LoginResponse) {
       this.setToken(data.token)
       this.setRefreshToken(data.refreshToken)
+      this.setRoles(data.roles || [])
 
       this.setUserInfo({
         id: data.userId,
@@ -161,6 +174,7 @@ export const useUserStore = defineStore('user', {
     // 获取API权限
     async fetchApiPermissions() {
       try {
+        const { permissionApi } = await import('@/api/modules/permission')
         const res = await permissionApi.getUserApiPermissions()
         if (res.code === 200) {
           this.setApiPermissions(res.data)
@@ -191,14 +205,19 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('refreshToken', refreshToken)
     },
 
+    setRoles(roles: string[]) {
+      this.roles = [...new Set(roles)]
+      localStorage.setItem('roles', JSON.stringify(this.roles))
+    },
+
     async logout() {
       try {
+        const { authApi } = await import('@/api/modules/auth')
         await authApi.logout()
       } catch (error) {
         console.error('退出登录失败:', error)
       } finally {
         this.clear()
-        window.location.reload()
       }
     },
 
@@ -206,12 +225,14 @@ export const useUserStore = defineStore('user', {
       this.token = ''
       this.refreshToken = ''
       this.userInfo = null
+      this.roles = []
       this.menus = []
       this.apiPermissions = []
       this.permissions = []
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('userInfo')
+      localStorage.removeItem('roles')
     },
 
     init() {
@@ -233,6 +254,8 @@ export const useUserStore = defineStore('user', {
           console.error('解析用户信息失败:', error)
         }
       }
+
+      this.roles = readStoredRoles()
 
       // 初始化时也尝试获取API权限（如果有token的话）
       if (this.token) {

@@ -3,6 +3,9 @@
     <!-- 顶部导航栏 -->
     <header class="header">
       <div class="header-left">
+        <div v-if="isMobile" class="menu-toggle" @click="drawerVisible = true">
+          <el-icon :size="18"><Menu /></el-icon>
+        </div>
         <div class="logo">
           <el-icon :size="22" color="#5b7fbc"><Monitor /></el-icon>
           <h2>MOK 后台管理</h2>
@@ -27,6 +30,13 @@
       </div>
 
       <div class="header-right">
+        <span
+          v-if="userStore.isGuest"
+          class="guest-readonly-badge"
+          title="当前账号为 Guest 只读角色"
+        >
+          <span class="guest-role-label">Guest · </span>只读
+        </span>
         <el-dropdown @command="handleCommand">
           <div class="user-info">
             <el-avatar :src="avatar" :size="32">
@@ -45,6 +55,30 @@
         </el-dropdown>
       </div>
     </header>
+
+    <el-drawer
+      v-if="hasMenu"
+      v-model="drawerVisible"
+      direction="ltr"
+      :size="260"
+      :with-header="false"
+      class="menu-drawer"
+    >
+      <aside class="sidebar">
+        <el-menu
+          :default-active="activeMenu"
+          background-color="transparent"
+          text-color="#94a3b8"
+          active-text-color="#e2e8f0"
+        >
+          <menu-item
+            v-for="menu in menus"
+            :key="menu.id"
+            :menu="menu"
+          />
+        </el-menu>
+      </aside>
+    </el-drawer>
 
     <div class="main-container">
       <!-- 左侧菜单 -->
@@ -84,17 +118,24 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowDown, Clock, Monitor, RefreshRight } from '@element-plus/icons-vue'
+import { ArrowDown, Clock, Menu, Monitor, RefreshRight } from '@element-plus/icons-vue'
 import MenuItem from '@/components/MenuItem.vue'
 import { useUserStore } from '@/stores/user'
 import { useTabsStore } from '@/stores/tabs'
 import TabsView from '@/components/TabsView.vue'
+import { useIsMobile } from '@/composables/useIsMobile'
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const tabsStore = useTabsStore()
+const { isMobile } = useIsMobile()
+const drawerVisible = ref(false)
+
+watch(() => route.fullPath, () => {
+  drawerVisible.value = false
+})
 
 const cachedTabs = computed(() => tabsStore.cachedTabs)
 const activeMenu = computed(() => route.path)
@@ -206,6 +247,29 @@ onUnmounted(() => {
   gap: 10px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  border-radius: var(--radius-sm);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.menu-toggle:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .header-left .logo h2 {
   margin: 0;
   font-size: 17px;
@@ -284,6 +348,21 @@ onUnmounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.guest-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .user-info {
@@ -333,6 +412,17 @@ onUnmounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
   border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.menu-drawer :deep(.el-drawer__body) {
+  padding: 0;
+}
+
+.menu-drawer .sidebar {
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  border-right: none;
 }
 
 /* ---- Menu Overrides ---- */
@@ -501,15 +591,24 @@ onUnmounted(() => {
     max-width: 60px;
   }
 
-  .sidebar {
-    width: 200px;
-    min-width: 200px;
+  .main-container > .sidebar {
+    display: none;
   }
 }
 
 @media (max-width: 576px) {
   .username,
   .time-display {
+    display: none;
+  }
+
+  .guest-role-label {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-left .logo h2 {
     display: none;
   }
 }

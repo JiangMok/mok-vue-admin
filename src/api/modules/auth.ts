@@ -14,13 +14,13 @@ export const captchaApi = {
  * 认证API
  */
 export const authApi = {
-  login: (data: LoginParams): Promise<ApiResponse<LoginParams>> => {
+  login: (data: LoginParams): Promise<ApiResponse<LoginResponse>> => {
     return request.post(`/auth/login`, data)
   },
   logout: (): Promise<ApiResponse> => {
     return request.post(`/auth/logout`)
   },
   refreshToken: (refreshToken: string): Promise<ApiResponse<LoginResponse>> => {
-    return request.post(`/auth/refresh?refreshToken=${refreshToken}`)
+    return request.post('/auth/refresh', { refreshToken })
   }
 }

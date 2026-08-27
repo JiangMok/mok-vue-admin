@@ -14,7 +14,7 @@ export const roleApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
-    roleName?: string
+    keyword?: string
   }): Promise<ApiResponse<PageResponse<RoleItem>>> => {
     return request.post('/role/page', params)
   },
@@ -37,10 +37,7 @@ export const roleApi = {
   }) => {
     return request.put('/role/update', data)
   },
-  delete: (id: string) => {
+  delete: (id: string): Promise<ApiResponse> => {
     return request.delete(`/role/delete/${id}`)
-  },
-  deleteRoles: (ids: string[]) => {
-    return request.delete('/system/role/batchDelete', { data: { ids } })
   }
 }

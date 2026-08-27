@@ -8,8 +8,8 @@ export const fileApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
+    keyword?: string
     params: {
-      keyword?: string
       fileType?: string
       uploadUserId?: string
       startTime?: string
@@ -38,8 +38,5 @@ export const fileApi = {
     return request.get(`/files/download/${id}`, {
       responseType: 'blob'
     })
-  },
-  updateDownloadCount: (id: string): Promise<ApiResponse> => {
-    return request.put(`/files/updateDownloadCount/${id}`)
   }
 }

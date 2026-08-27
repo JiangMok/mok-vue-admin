@@ -4,6 +4,7 @@ import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'a
 import axios from 'axios';
 // 3. 导入 Element Plus 的消息提示组件，用于在页面上弹出错误/成功提示
 import { ElMessage } from 'element-plus';
+import type { ApiResponse, LoginResponse } from '@/types';
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
 }
@@ -43,10 +44,17 @@ const refreshAxios = axios.create({
 let isRefreshing = false;                         // 标记是否正在刷新 token，防止同时发送多个刷新请求
 let requests: PendingRequest[] = [];              // 刷新期间等待重试的请求
 
-function clearSessionAndRedirectToLogin() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('refreshToken')
-  window.location.assign('/login')
+async function clearSessionAndRedirectToLogin() {
+  const [{ useUserStore }, { default: router }] = await Promise.all([
+    import('@/stores/user'),
+    import('@/router')
+  ])
+  const userStore = useUserStore()
+  userStore.clear()
+  delete service.defaults.headers.Authorization
+  if (router.currentRoute.value.path !== '/login') {
+    await router.replace('/login')
+  }
 }
 
 /**
@@ -62,8 +70,11 @@ async function refreshToken(): Promise<string> {
     throw new Error('没有 refreshToken');
   }
 
-  // 10.3 使用独立的 refreshAxios 实例调用刷新接口，将 refreshToken 作为 URL 参数传递
-  const response = await refreshAxios.post(`/auth/refresh?refreshToken=${refreshTokenStr}`);
+  // 10.3 使用独立的 refreshAxios 实例调用刷新接口，避免触发主实例的刷新拦截器
+  const response: AxiosResponse<ApiResponse<LoginResponse>> = await refreshAxios.post(
+    '/auth/refresh',
+    { refreshToken: refreshTokenStr }
+  );
 
   // 10.4 检查后端返回的业务状态码。即便 HTTP 状态码是 200，业务上也可能失败（例如 refreshToken 过期）
   //     后端约定 code 为 200 才算成功，其他值都表示失败。
@@ -73,12 +84,20 @@ async function refreshToken(): Promise<string> {
   }
 
   // 10.5 从响应数据中解构出新的 accessToken 和 refreshToken
-  const newToken = response.data.data.token;
-  const newRefreshToken = response.data.data.refreshToken;
+  const loginData = response.data.data;
+  const newToken = loginData.token;
+  const newRefreshToken = loginData.refreshToken;
 
   // 10.6 将新 token 保存到 localStorage 中，覆盖旧的 token
   localStorage.setItem('token', newToken);
   localStorage.setItem('refreshToken', newRefreshToken);
+
+  // 同步 Pinia 中的登录态，避免刷新成功后页面仍持有旧 token 或旧角色
+  const { useUserStore } = await import('@/stores/user');
+  const userStore = useUserStore();
+  userStore.setToken(newToken);
+  userStore.setRefreshToken(newRefreshToken);
+  userStore.setRoles(loginData.roles || []);
 
   // 10.7 更新主实例 service 的默认请求头，让后续所有请求自动携带新的 accessToken
   service.defaults.headers.Authorization = `Bearer ${newToken}`;
@@ -213,9 +232,7 @@ service.interceptors.response.use(
       const token = localStorage.getItem('token');
       const refreshTokenStr = localStorage.getItem('refreshToken');
       if (!token || !refreshTokenStr) {
-        // 如果连 token 都没有，说明用户确实未登录，直接清空存储并跳转登录
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
+        // 如果登录凭据不完整，清空完整会话并跳转登录页
         await clearSessionAndRedirectToLogin();
         return Promise.reject(error);
       }

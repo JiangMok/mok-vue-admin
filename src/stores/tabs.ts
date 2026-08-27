@@ -29,7 +29,12 @@ export const useTabsStore = defineStore('tabs', {
       if (exists) return
 
       const title = (route.meta?.title as string) || route.name?.toString() || '未知'
-      const icon = route.meta?.icon as string | Component | undefined
+      const rawIcon = route.meta?.icon
+      const icon = typeof rawIcon === 'string'
+        || (typeof rawIcon === 'object' && rawIcon !== null)
+        || typeof rawIcon === 'function'
+        ? rawIcon as string | Component
+        : undefined
 
       const tab: TabItem = {
         path: route.path,
@@ -93,12 +98,13 @@ export const useTabsStore = defineStore('tabs', {
     refreshTab(path: string) {
       const tab = this.visitedTabs.find(tab => tab.path === path)
       if (!tab || !tab.name) return
+      const tabName = tab.name
 
-      if (this.cachedTabs.includes(tab.name)) {
-        this.cachedTabs = this.cachedTabs.filter(name => name !== tab.name)
+      if (this.cachedTabs.includes(tabName)) {
+        this.cachedTabs = this.cachedTabs.filter(name => name !== tabName)
         setTimeout(() => {
           if (this.visitedTabs.some(t => t.path === path)) {
-            this.cachedTabs.push(tab.name!)
+            this.cachedTabs.push(tabName)
           }
         }, 0)
       } else {

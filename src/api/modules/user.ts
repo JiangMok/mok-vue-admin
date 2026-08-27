@@ -1,5 +1,5 @@
 import request from "@/utils/request.ts"
-import type { ApiResponse, PageResponse, ProfileUserInfo, UserInfo } from '@/types'
+import type { ApiResponse, PageResponse, PasswordUpdateRequest, ProfileUserInfo, UserInfo } from '@/types'
 
 /**
  * 用户管理API
@@ -8,7 +8,6 @@ export const userApi = {
   getUsers: (params: {
     pageNum: number
     pageSize: number
-    username?: string
     keyword?: string
     status?: number
     params?: Record<string, unknown>
@@ -24,7 +23,7 @@ export const userApi = {
   updateUser: (data: Partial<UserInfo>): Promise<ApiResponse> => {
     return request.post('/user/update', data)
   },
-  updateUserPwd: (data: Partial<UserInfo>): Promise<ApiResponse<UserInfo>> => {
+  updateUserPwd: (data: PasswordUpdateRequest): Promise<ApiResponse<string>> => {
     return request.post('/user/updatePwd', data)
   },
   resetPwd: (id: string): Promise<ApiResponse> => {

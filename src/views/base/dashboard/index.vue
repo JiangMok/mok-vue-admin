@@ -16,6 +16,16 @@
       </div>
     </div>
 
+    <el-alert
+      v-if="userStore.isGuest"
+      class="guest-readonly-alert"
+      type="info"
+      :closable="false"
+      show-icon
+      title="当前为 Guest 只读模式"
+      description="仪表盘仅展示组件状态等脱敏信息；配置、写入和管理操作由后端权限继续校验。"
+    />
+
     <!-- 顶部：整体健康分数 + 概览卡片 -->
     <div class="top-section">
       <!-- 整体健康分数环形图 -->
@@ -70,6 +80,17 @@
       </div>
     </div>
 
+    <div v-if="userStore.isGuest" class="section">
+      <div class="section-header"><h3>组件状态</h3></div>
+      <div class="health-grid">
+        <HealthCard icon="SetUp" label="应用服务" :item="appHealth" />
+        <HealthCard icon="Coin" label="数据库" :item="healthData.database" />
+        <HealthCard icon="Collection" label="Redis 缓存" :item="healthData.redis" />
+        <HealthCard icon="Connection" label="RabbitMQ" :item="healthData.rabbitmq" />
+      </div>
+    </div>
+
+    <template v-else>
     <!-- 核心服务 -->
     <div class="section">
       <div class="section-header"><h3>核心服务</h3></div>
@@ -233,6 +254,7 @@
         </div>
       </div>
     </div>
+    </template>
 
     <!-- 页脚 -->
     <div class="footer">
@@ -249,6 +271,9 @@ import {
   Coin, Connection, Files, FolderOpened, Delete, Link, Operation
 } from '@element-plus/icons-vue'
 import { sysInfoApi } from "@/api"
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 // ────────────── 子组件：健康卡片 ──────────────
 const RespTime = (props: { ms: number }) => {
@@ -677,6 +702,7 @@ onBeforeUnmount(stopAutoRefresh)
 .mono { font-family: var(--font-mono); font-size: 12px; }
 .text-danger  { color: var(--app-danger) !important; }
 .text-warning { color: var(--app-warning) !important; }
+.guest-readonly-alert { margin-bottom: 18px; }
 
 /* ========================= 页脚 ========================= */
 .footer {

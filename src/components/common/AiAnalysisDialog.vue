@@ -45,7 +45,9 @@ const props = withDefaults(defineProps<{
   apiEndpoint?: string
   title?: string
 }>(), {
-  apiEndpoint: 'http://localhost:8080/api/ai/analysis',
+  apiEndpoint: import.meta.env.PROD
+    ? '/api/ai/analysis'
+    : `${import.meta.env.VITE_API_BASE_URL || '/api'}/ai/analysis`,
   title: 'AI 分析',
 })
 

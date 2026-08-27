@@ -56,3 +56,11 @@ export interface UserRequestData {
   deptId?: string
   roleIds: string[]
 }
+
+export interface PasswordUpdateRequest {
+  id: string
+  username: string
+  nickname: string
+  password: string
+  confirmPassword: string
+}

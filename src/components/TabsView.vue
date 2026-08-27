@@ -16,7 +16,7 @@
         <template #label>
           <el-dropdown
             trigger="contextmenu"
-            @command="handleDropdownCommand($event, tab)"
+            @command="handleContextMenu(String($event), tab)"
           >
             <span class="tab-label">
               <el-icon v-if="tab.icon" size="14">
@@ -55,6 +55,7 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTabsStore, type TabItem } from '@/stores/tabs'
 import { ElMessage } from 'element-plus'
+import type { TabsPaneContext } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
@@ -74,20 +75,17 @@ const activeTab = computed({
   }
 })
 
-const handleTabClick = (tab: any) => {
+const handleTabClick = (tab: TabsPaneContext) => {
   const path = tab.props.name
-  if (path !== route.path) {
+  if (typeof path === 'string' && path !== route.path) {
     router.push(path)
   }
 }
 
-const handleTabRemove = (path: string) => {
+const handleTabRemove = (name: string | number) => {
+  const path = String(name)
   if (isFixedTab(path)) return
   closeTab(path)
-}
-
-const handleDropdownCommand = (command: string | number | object, tab: TabItem) => {
-  handleContextMenu(String(command), tab)
 }
 
 const handleContextMenu = (command: string, tab: TabItem) => {
@@ -210,5 +208,16 @@ const refreshTab = (path: string) => {
 .tabs-container :deep(.el-tabs__item:hover) {
   color: var(--app-text) !important;
   background: var(--app-bg-elevated);
+}
+
+@media (max-width: 768px) {
+  .tabs-container {
+    padding: 0 4px;
+  }
+
+  .tabs-container :deep(.el-tabs__item) {
+    padding: 0 10px !important;
+    font-size: 12px;
+  }
 }
 </style>

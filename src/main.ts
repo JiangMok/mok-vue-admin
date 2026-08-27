@@ -30,6 +30,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
  * 作用：作为整个Vue应用的根组件
  */
 import App from './App.vue'
+import './styles/mobile.css'
 /**
  * 导入路由配置
  * router: 我们在router/index.ts中定义的路由实例

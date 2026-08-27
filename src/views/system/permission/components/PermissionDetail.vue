@@ -130,7 +130,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { Folder, Menu, Operation } from '@element-plus/icons-vue'
 import { getIconComponent } from '@/utils/icons'
-import type {ApiPermission, PermissionItem} from '@/types'
+import type { PermissionItem, PermissionTreeNode } from '@/types'
 import { permissionApi } from '@/api'
 
 // 定义组件属性和事件
@@ -170,7 +170,7 @@ const detailData = reactive<PermissionItem>({
 })
 
 // 权限树数据（用于显示父级权限名称）
-const permissionTree = ref<ApiPermission[]>([])
+const permissionTree = ref<PermissionTreeNode[]>([])
 
 // 计算属性
 const dialogVisible = computed({
@@ -181,8 +181,7 @@ const dialogVisible = computed({
 // 获取权限树
 const fetchPermissionTree = async () => {
   try {
-    const res = await permissionApi.getByUserId()
-    // TODO: 根据实际接口响应结构调整
+    const res = await permissionApi.getTree()
     permissionTree.value = res.data || []
   } catch (error) {
     // console.error('获取权限树失败:', error)
@@ -193,10 +192,10 @@ const fetchPermissionTree = async () => {
 const getParentPermissionName = (parentId: string) => {
   if (!parentId || parentId === '0') return ''
 
-  const findPermission = (permissions: ApiPermission[]): string => {
+  const findPermission = (permissions: PermissionTreeNode[]): string => {
     for (const permission of permissions) {
       if (permission.id === parentId) {
-        return permission.permissionName
+        return permission.name
       }
       if (permission.children && permission.children.length > 0) {
         const result = findPermission(permission.children)

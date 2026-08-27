@@ -4,6 +4,7 @@
     title="文件详情"
     width="600px"
     destroy-on-close
+    @closed="clearPreviewUrl"
   >
     <div class="file-detail">
       <!-- 文件基本信息 -->
@@ -32,9 +33,7 @@
         <el-descriptions-item label="MIME类型">{{ fileData?.mimeType }}</el-descriptions-item>
         <el-descriptions-item label="存储路径">{{ fileData?.filePath }}</el-descriptions-item>
         <el-descriptions-item label="访问URL">
-          <el-link type="primary" :href="fileData?.fileUrl" target="_blank">
-            {{ fileData?.fileUrl }}
-          </el-link>
+          请通过鉴权下载接口访问
         </el-descriptions-item>
         <el-descriptions-item label="上传用户">{{ fileData?.uploadUserName || fileData?.uploadUserId }}</el-descriptions-item>
         <el-descriptions-item label="上传IP">{{ fileData?.uploadIp }}</el-descriptions-item>
@@ -51,13 +50,13 @@
       </el-descriptions>
 
       <!-- 预览区域（如果是图片） -->
-      <div v-if="fileData?.fileType === 'image'" class="preview-section">
+      <div v-if="fileData?.fileType === 'image'" v-loading="previewLoading" class="preview-section">
         <h4>预览</h4>
         <el-image
-          :src="fileData?.fileUrl"
+          :src="previewUrl"
           fit="contain"
           style="width: 100%; max-height: 300px;"
-          :preview-src-list="[fileData?.fileUrl]"
+          :preview-src-list="previewUrl ? [previewUrl] : []"
           :initial-index="0"
         />
       </div>
@@ -73,9 +72,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { Picture, VideoCamera, Document, Files } from '@element-plus/icons-vue'
 import type { FileItem } from '@/types'
+import { fileApi } from '@/api'
 
 interface Props {
   visible: boolean
@@ -94,6 +95,33 @@ const visible = computed({
   get: () => props.visible,
   set: (value) => emit('update:visible', value)
 })
+const previewLoading = ref(false)
+const previewUrl = ref('')
+
+const clearPreviewUrl = () => {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+  }
+  previewUrl.value = ''
+}
+
+const loadPreview = async () => {
+  clearPreviewUrl()
+  if (!props.visible || props.fileData?.fileType !== 'image') return
+
+  try {
+    previewLoading.value = true
+    const blob = await fileApi.download(props.fileData.id)
+    previewUrl.value = URL.createObjectURL(blob)
+  } catch {
+    ElMessage.error('文件预览失败')
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+watch(() => [props.visible, props.fileData?.id], loadPreview)
+onBeforeUnmount(clearPreviewUrl)
 
 // 获取文件类型文本
 const getFileTypeText = (fileType?: string) => {

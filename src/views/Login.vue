@@ -37,6 +37,7 @@
     <div class="login-main">
       <div class="main-decor-ring"></div>
       <div class="login-box">
+        <img src="/logo.png" alt="MOK" class="login-mobile-logo" />
         <div class="login-header">
           <h2>欢迎回来</h2>
           <p>请登录您的账户</p>
@@ -498,6 +499,10 @@ onMounted(() => {
   animation: cardFadeUp 0.7s ease-out 0.15s both;
 }
 
+.login-mobile-logo {
+  display: none;
+}
+
 /* ④ 卡片顶部钢蓝渐变强调线 */
 .login-box::before {
   content: '';
@@ -652,40 +657,8 @@ onMounted(() => {
 
 /* ========================= 响应式 ========================= */
 @media (max-width: 768px) {
-  .login-container {
-    flex-direction: column;
-  }
-
   .login-brand {
-    flex: 0 0 auto;
-    padding: 48px 20px 36px;
-  }
-
-  .login-brand::after {
     display: none;
-  }
-
-  .brand-logo {
-    width: 150px;
-    height: 150px;
-    margin-bottom: 14px;
-  }
-
-  .brand-name {
-    font-size: 32px;
-    letter-spacing: 4px;
-  }
-
-  .brand-subtitle {
-    font-size: 14px;
-  }
-
-  .brand-tagline {
-    margin-top: 16px;
-  }
-
-  .brand-accent {
-    margin-top: 20px;
   }
 
   .login-main {
@@ -696,6 +669,14 @@ onMounted(() => {
     width: 100%;
     max-width: 400px;
     padding: 32px 24px 24px;
+  }
+
+  .login-mobile-logo {
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    object-fit: contain;
   }
 }
 

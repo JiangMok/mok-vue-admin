@@ -268,13 +268,14 @@
       width="70%"
       top="5vh"
       destroy-on-close
+      @closed="clearPreviewUrl"
     >
-      <div class="preview-content">
+      <div class="preview-content" v-loading="previewLoading">
         <div v-if="currentFile?.fileType === 'image'" class="image-preview">
           <el-image
-            :src="currentFile?.fileUrl"
+            :src="previewUrl"
             fit="contain"
-            :preview-src-list="[currentFile?.fileUrl]"
+            :preview-src-list="previewUrl ? [previewUrl] : []"
             :initial-index="0"
           />
           <p class="preview-hint">
@@ -308,7 +309,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onBeforeUnmount, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Upload, Delete, Picture, VideoPlay, Document, Files, ZoomIn
@@ -362,6 +363,8 @@ const uploadForm = reactive({
 // 预览相关
 const currentFile = ref<FileItem | null>(null)
 const previewDialogVisible = ref(false)
+const previewLoading = ref(false)
+const previewUrl = ref('')
 
 // 获取文件列表
 const fetchList = async () => {
@@ -371,15 +374,12 @@ const fetchList = async () => {
     const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      ...searchForm
-    }
-    // 清除空值
-    const cleanParams: Record<string, any> = { ...params }
-    Object.keys(cleanParams).forEach(key => {
-      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
-        delete cleanParams[key]
+      keyword: searchForm.keyword || undefined,
+      params: {
+        fileType: searchForm.params.fileType,
+        uploadUserId: searchForm.params.uploadUserId
       }
-    })
+    }
 
     const res = await fileApi.getPage(params)
     // console.log('文件列表响应:', res)
@@ -566,13 +566,28 @@ const handleUploadSubmit = async () => {
 }
 
 // 预览文件
-const handlePreview = (row: FileItem) => {
+const handlePreview = async (row: FileItem) => {
+  clearPreviewUrl()
   currentFile.value = row
-
-  // 不再硬编码 localhost:8080，直接使用 row.fileUrl
-  // 假设后端已返回完整的文件URL
-  // console.log('预览文件URL:', row.fileUrl)
   previewDialogVisible.value = true
+  if (row.fileType !== 'image') return
+
+  try {
+    previewLoading.value = true
+    const blob = await fileApi.download(row.id)
+    previewUrl.value = URL.createObjectURL(blob)
+  } catch (error) {
+    ElMessage.error('文件预览失败')
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+const clearPreviewUrl = () => {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+  }
+  previewUrl.value = ''
 }
 
 // 下载文件
@@ -580,17 +595,15 @@ const handleDownload = async (row: FileItem | null) => {
   if (!row) return
 
   try {
-    // 方法1：直接通过后端返回的URL下载
+    const blob = await fileApi.download(row.id)
+    const objectUrl = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = row.fileUrl
+    link.href = objectUrl
     link.download = row.originalName
-    link.target = '_blank'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-
-    // 如果需要，可以调用后端API更新下载次数
-    await fileApi.updateDownloadCount(row.id)
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
 
     // 刷新列表
     fetchList()
@@ -730,6 +743,7 @@ const truncateText = (text: string, maxLength: number) => {
 onMounted(() => {
   fetchList()
 })
+onBeforeUnmount(clearPreviewUrl)
 
 const formatBusinessType = (type: number) => {
   const typeMap: Record<number, string> = {

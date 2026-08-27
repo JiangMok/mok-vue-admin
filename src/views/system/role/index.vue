@@ -4,7 +4,7 @@
       <h2>角色管理</h2>
       <div class="header-actions">
         <el-button type="primary" @click="handleAdd"
-                   v-if="userStore.hasPermission('system:user:add')">
+                   v-if="userStore.hasPermission('system:role:add')">
           <el-icon>
             <Plus/>
           </el-icon>
@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import type {OperationLog, RoleItem} from "@/types";
+import type { RoleItem } from '@/types'
 import {onMounted, reactive, ref} from "vue";
 import {useUserStore} from "@/stores/user.ts";
 import {ElMessage, ElMessageBox} from "element-plus";
@@ -154,7 +154,7 @@ const searchForm = reactive({
   }
 })
 // 表格选择
-const selectedRows = ref<OperationLog[]>([])
+const selectedRows = ref<RoleItem[]>([])
 //====== 增加、修改、详情 弹窗控制 --- 开始 ======
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
@@ -184,7 +184,7 @@ const handleDetail = (row: RoleItem) => {
 /**
  * 表格选择改变
  */
-const handleSelectionChange = (rows: OperationLog[]) => {
+const handleSelectionChange = (rows: RoleItem[]) => {
   selectedRows.value = rows
 }
 /**
@@ -198,15 +198,8 @@ const fetchList = async () => {
     const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      ...searchForm
+      keyword: searchForm.keyword || undefined
     }
-    // 清除空值
-    const cleanParams: Record<string, any> = { ...params }
-    Object.keys(cleanParams).forEach(key => {
-      if (cleanParams[key] === '' || cleanParams[key] === undefined || cleanParams[key] === null) {
-        delete cleanParams[key]
-      }
-    })
     const res = await roleApi.getPage(params)
     // console.log('列表响应:', res)
     //将返回的数据传给页面列表
@@ -222,7 +215,7 @@ const fetchList = async () => {
 /**
  * 删除
  */
-const handleDelete = async (row: OperationLog) => {
+const handleDelete = async (row: RoleItem) => {
   try {
     await ElMessageBox.confirm(
       `确定删除吗？`,
@@ -255,10 +248,10 @@ const handleEdit = (row: RoleItem) => {
 /**
  * 新增
  */
-const handleAdd = (row: RoleItem) => {
-  // ================== 修改：打开添加用户对话框 ==================
+const handleAdd = () => {
+  // ================== 修改：打开添加角色对话框 ==================
   isEditMode.value = false
-  currentEditData.value = {...row}
+  currentEditData.value = null
   dialogVisible.value = true
 }
 // ================== 处理 新增、修改 对话框操作成功 ==================

@@ -1,0 +1,44 @@
+@media (max-width: 768px) {
+  .el-dialog,
+  .el-message-box {
+    max-width: calc(100vw - 32px);
+  }
+
+  .el-dialog__body {
+    padding: 14px 16px;
+  }
+
+  .el-picker__popper {
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+  }
+
+  .el-form--inline .el-form-item {
+    margin-right: 0;
+  }
+
+  .el-pagination__total,
+  .el-pagination__sizes {
+    display: none;
+  }
+
+  .el-date-editor--daterange {
+    width: 100% !important;
+  }
+
+  .el-table {
+    max-width: 100%;
+  }
+
+  .menu-drawer,
+  .menu-drawer.el-drawer,
+  .menu-drawer .el-drawer {
+    --el-drawer-bg-color: var(--app-bg-sidebar);
+    background: var(--app-bg-sidebar);
+  }
+
+  .menu-drawer .el-drawer__body,
+  .menu-drawer.el-drawer .el-drawer__body {
+    padding: 0 !important;
+  }
+}

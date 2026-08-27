@@ -20,6 +20,23 @@ export interface ApiPermission {
   children?: ApiPermission[]
 }
 
+/** 管理端完整权限树，与 /permission/tree 响应字段保持一致。 */
+export interface PermissionTreeNode {
+  id: string
+  name: string
+  code: string
+  type: number
+  description?: string
+  icon?: string | null
+  path?: string | null
+  component?: string | null
+  sort?: number
+  visible?: number
+  status?: number
+  createTime?: string
+  children?: PermissionTreeNode[]
+}
+
 /**
  * 菜单项类型（动态路由来源）
  */

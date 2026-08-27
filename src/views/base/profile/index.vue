@@ -56,7 +56,8 @@
           </el-form-item>
 
           <el-form-item>
-            <el-button type="warning" @click="showPasswordDialog">修改密码</el-button>
+            <el-button v-if="!userStore.isGuest" type="warning" @click="showPasswordDialog">修改密码</el-button>
+            <el-tag v-else type="warning" effect="plain">Guest 账号为只读角色</el-tag>
           </el-form-item>
         </el-form>
       </div>
@@ -109,7 +110,7 @@ import { ElMessage, type FormInstance, type UploadFile } from 'element-plus'
 import { User, Camera } from '@element-plus/icons-vue'
 import type { UploadProps } from 'element-plus'
 import {userApi} from "@/api";
-import type {UserRequestData} from "@/types";
+import type { PasswordUpdateRequest } from '@/types'
 
 const formRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
@@ -259,15 +260,10 @@ const submitPasswordChange = () => {
   passwordFormRef.value.validate(async (valid) => {
     if (valid) {
       changingPassword.value = true
-      const submitData: UserRequestData = {
+      const submitData: PasswordUpdateRequest = {
         id: userInfo.id,
         username: userInfo.username,
         nickname: userInfo.nickname,
-        phone: userInfo.phone,
-        email: userInfo.email,
-        avatar: userInfo.avatar || '',
-        status: userInfo.status,
-        roleIds: [],
         password: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword
       }
@@ -283,7 +279,7 @@ const submitPasswordChange = () => {
           ElMessage.success(res.msg)
         }
       }catch (error){
-        ElMessage.success(error as string)
+        ElMessage.error(error instanceof Error ? error.message : '密码修改失败')
       }finally{
         changingPassword.value = false
       }

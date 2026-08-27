@@ -1,5 +1,5 @@
 <template>
-  <!-- 用户添加/编辑表单对话框 -->
+  <!-- 角色添加/编辑表单对话框 -->
   <el-dialog
     v-model="dialogVisible"
     :title="dialogTitle"
@@ -70,7 +70,7 @@
           style="width: 100%"
           :loading="permissionLoading"
           :disabled="permissionLoading"
-          :props="{ label: 'permissionName', children: 'children' }"
+          :props="{ label: 'name', children: 'children' }"
           node-key="id"
           show-checkbox
         />
@@ -109,10 +109,8 @@
 // ================== 新增：导入需要的库和类型 ==================
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import { buildPermissionTree } from '@/utils/tree'
-import type {ApiPermission, RoleFormData, RoleItem, UserFormData, UserRequestData} from '@/types'
-import {permissionApi, roleApi, userApi} from '@/api'
+import type { PermissionTreeNode, RoleFormData } from '@/types'
+import { permissionApi, roleApi } from '@/api'
 
 // ================== 新增：定义组件属性和事件 ==================
 interface Props {
@@ -149,17 +147,17 @@ const formData = reactive<RoleFormData>({
 })
 
 // 角色列表
-const permissionList = ref<ApiPermission[]>([])
+const permissionList = ref<PermissionTreeNode[]>([])
 const permissionLoading = ref(false)
 // 权限树形数据（用于 el-tree-select）
-const permissionTreeData = computed(() => buildPermissionTree(permissionList.value))
+const permissionTreeData = computed(() => permissionList.value)
 // 提交加载状态
 const submitLoading = ref(false)
 
 // ================== 新增：计算属性 ==================
 // 计算对话框标题
 const dialogTitle = computed(() => {
-  return props.isEdit ? '编辑用户' : '新增用户'
+  return props.isEdit ? '编辑角色' : '新增角色'
 })
 
 // 计算对话框是否可见
@@ -263,8 +261,7 @@ const resetForm = () => {
 const fetchPermissionList = async () => {
   permissionLoading.value = true
   try {
-    const res = await permissionApi.getByUserId()
-    // console.log('所有权限列表:', res)
+    const res = await permissionApi.getTree()
     permissionList.value = res.data || []
   } catch (error) {
     // console.error('获取权限列表失败:', error)
@@ -276,8 +273,16 @@ const fetchPermissionList = async () => {
 
 // ================== 新增：根据权限ID获取权限名称 ==================
 const getPermissionName = (permissionId: string) => {
-  const permission = permissionList.value.find(item => item.id === permissionId)
-  return permission ? (permission.permissionName  || `权限ID: ${permissionId}`) : `权限ID: ${permissionId}`
+  const findPermission = (items: PermissionTreeNode[]): PermissionTreeNode | undefined => {
+    for (const item of items) {
+      if (item.id === permissionId) return item
+      const child = item.children ? findPermission(item.children) : undefined
+      if (child) return child
+    }
+    return undefined
+  }
+  const permission = findPermission(permissionList.value)
+  return permission ? (permission.name || `权限ID: ${permissionId}`) : `权限ID: ${permissionId}`
 }
 
 // ================== 新增：移除 ==================
@@ -332,13 +337,13 @@ const handleSubmit = async () => {
 
     // 调用API
     if (props.isEdit && props.editData) {
-      // 编辑用户
+      // 编辑角色
       await roleApi.updateRole({ id: props.editData.id, ...submitData })
-      ElMessage.success('用户更新成功')
+      ElMessage.success('角色更新成功')
     } else {
-      // 新增用户
+      // 新增角色
       await roleApi.addRole(submitData)
-      ElMessage.success('用户添加成功')
+      ElMessage.success('角色添加成功')
     }
 
     // 触发成功事件
