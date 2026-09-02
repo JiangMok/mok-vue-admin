@@ -8,7 +8,11 @@
     top="5vh"
     class="ai-analysis-dialog"
   >
-    <div class="analysis-body" v-loading="loading" element-loading-text="AI 正在分析中...">
+    <div class="analysis-body">
+      <div v-if="loading" class="analysis-status">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>AI 正在分析中，内容将实时显示...</span>
+      </div>
       <!-- 错误状态 -->
       <el-alert
         v-if="error"
@@ -35,6 +39,7 @@
 
 <script setup lang="ts">
 import {computed, watch, onBeforeUnmount} from 'vue'
+import {Loading} from '@element-plus/icons-vue'
 import {useAnalysisSSE} from '@/composables/useAnalysisSSE'
 import {renderMarkdown} from '@/utils/markdown'
 
@@ -56,7 +61,7 @@ const emit = defineEmits<{
   (e: 'analysis-done'): void
 }>()
 
-const {content, loading, error, start, stop} = useAnalysisSSE()
+const {content, loading, error, completed, start, stop} = useAnalysisSSE()
 
 // 将累积文本转为安全的 HTML
 const renderedMarkdown = computed(() => {
@@ -78,12 +83,13 @@ watch(
     } else {
       stop()
     }
-  }
+  },
+  {immediate: true}
 )
 
-// 当内容完成且没有错误时，触发完成事件（仅示例，实际可根据需要）
-watch(content, (val) => {
-  if (val && !loading.value && !error.value) {
+// 以服务端 [DONE] 为准发送完成事件，避免内容 watch 与 loading 更新时序竞态。
+watch(completed, (done) => {
+  if (done) {
     emit('analysis-done')
   }
 })
@@ -107,6 +113,15 @@ onBeforeUnmount(stop)
 
 .analysis-body {
   min-height: 200px;
+}
+
+.analysis-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #409eff;
+  font-size: 13px;
 }
 
 /* ========== Markdown 渲染样式 ========== */

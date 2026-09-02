@@ -27,7 +27,9 @@ export const fileApi = {
   batchDelete: (ids: string[]): Promise<ApiResponse> => {
     return request.delete('/files/batchDelete', { data: { ids } })
   },
-  upload: (formData: FormData): Promise<ApiResponse<FileUploadResponse>> => {
+  upload: (file: File): Promise<ApiResponse<FileUploadResponse>> => {
+    const formData = new FormData()
+    formData.append('file', file)
     return request.post('/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'

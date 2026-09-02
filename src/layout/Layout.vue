@@ -139,7 +139,6 @@ watch(() => route.fullPath, () => {
 
 const cachedTabs = computed(() => tabsStore.cachedTabs)
 const activeMenu = computed(() => route.path)
-const currentRoute = computed(() => route)
 const menus = computed(() => userStore.menus)
 const hasMenu = computed(() => menus.value && menus.value.length > 0)
 
@@ -203,9 +202,6 @@ onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
   tabsStore.closeAllTabs()
-  if (route.path !== '/') {
-    router.push('/')
-  }
 })
 
 onUnmounted(() => {

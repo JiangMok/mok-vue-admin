@@ -142,6 +142,7 @@ const initFormData = () => {
     formData.status = props.editData.status ?? 1
   } else {
     resetForm()
+    formData.parentId = props.editData?.parentId ?? '0'
   }
 }
 

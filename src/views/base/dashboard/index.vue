@@ -264,11 +264,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, computed, h, watch } from 'vue'
-import { ElMessage, ElTag } from 'element-plus'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, h } from 'vue'
+import { ElTag } from 'element-plus'
 import {
-  Monitor, Clock, Cpu, Collection, SetUp, Refresh, CircleCheckFilled,
-  Coin, Connection, Files, FolderOpened, Delete, Link, Operation
+  Monitor, Clock, Cpu, SetUp, Refresh, CircleCheckFilled, FolderOpened
 } from '@element-plus/icons-vue'
 import { sysInfoApi } from "@/api"
 import { useUserStore } from '@/stores/user'

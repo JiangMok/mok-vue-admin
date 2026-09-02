@@ -1,11 +1,31 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { useUserStore } from "@/stores/user.ts";
+import { registerSessionCleanupHandler, useUserStore } from "@/stores/user.ts";
 import type {MenuItem} from "@/types";
 import {menuApi, permissionApi} from "@/api/modules/permission";
 import Layout from "@/layout/Layout.vue";
 
 // 在文件顶部，在函数外部定义
 const modules = import.meta.glob('../views/**/*.vue')
+
+/**
+ * 只保留当前前端构建中真实存在的菜单组件。
+ * 后端数据库仍残留已裁剪模块的菜单时，侧边栏不会展示一个只能落到 404 的入口。
+ */
+const filterAvailableMenus = (menus: MenuItem[]): MenuItem[] =>
+  menus.reduce<MenuItem[]>((availableMenus, menu) => {
+    const children = filterAvailableMenus(menu.children || [])
+    const isContainer = !menu.component || menu.component === 'Layout'
+    const componentExists = menu.component === 'Layout' ||
+      Boolean(menu.component && modules[`../views/${menu.component}.vue`])
+
+    if ((!isContainer && !componentExists) || (isContainer && children.length === 0)) {
+      console.warn(`忽略无可用前端组件的菜单: ${menu.name} (${menu.component || menu.path})`)
+      return availableMenus
+    }
+
+    availableMenus.push({ ...menu, children })
+    return availableMenus
+  }, [])
 
 // 定义静态路由
 export const constantRoutes: RouteRecordRaw[] = [
@@ -62,6 +82,26 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: constantRoutes
 })
+
+const dynamicRouteRemoveCallbacks: Array<() => void> = []
+let dynamicRoutesRegistered = false
+let authorizationLoadPromise: Promise<void> | null = null
+
+class StaleSessionError extends Error {}
+
+/** 移除当前会话注册的所有动态路由（包括动态 404）。 */
+export const resetDynamicRoutes = () => {
+  let removeRoute = dynamicRouteRemoveCallbacks.pop()
+  while (removeRoute) {
+    removeRoute()
+    removeRoute = dynamicRouteRemoveCallbacks.pop()
+  }
+  dynamicRoutesRegistered = false
+  // 已在执行的请求无法取消，但 sessionRevision 会阻止旧响应写回新会话。
+  authorizationLoadPromise = null
+}
+
+registerSessionCleanupHandler(resetDynamicRoutes)
 
 // 优化后的路由转换函数
 const convertMenuToRoute = (menu: MenuItem, parentPath = ''): RouteRecordRaw => {
@@ -127,24 +167,79 @@ const convertMenuToRoute = (menu: MenuItem, parentPath = ''): RouteRecordRaw => 
 
 // 动态添加路由
 function addDynamicRoutes(menus: MenuItem[]) {
-  if (!menus || menus.length === 0) {
-    console.warn('菜单数据为空，无法添加动态路由')
+  if (dynamicRoutesRegistered) {
     return
   }
 
-  // 转换菜单为路由
-  const dynamicRoutes = menus.map(menu => convertMenuToRoute(menu))
+  try {
+    // 空菜单也是合法结果；此时只注册兜底路由。
+    const dynamicRoutes = Array.isArray(menus)
+      ? menus.map(menu => convertMenuToRoute(menu))
+      : []
 
-  // 添加动态路由
-  dynamicRoutes.forEach(route => {
-    router.addRoute(route)
-  })
+    dynamicRoutes.forEach(route => {
+      dynamicRouteRemoveCallbacks.push(router.addRoute(route))
+    })
 
-  // 添加404页面
-  router.addRoute({
-    path: '/:catchAll(.*)',
-    redirect: '/404'
-  })
+    dynamicRouteRemoveCallbacks.push(router.addRoute({
+      path: '/:pathMatch(.*)*',
+      name: 'DynamicNotFound',
+      redirect: '/404'
+    }))
+    dynamicRoutesRegistered = true
+  } catch (error) {
+    resetDynamicRoutes()
+    throw error
+  }
+}
+
+const ensureAuthorizationReady = async (userStore: ReturnType<typeof useUserStore>) => {
+  if (userStore.permissionsLoaded) {
+    if (!userStore.dynamicRoutesLoaded || !dynamicRoutesRegistered) {
+      addDynamicRoutes(userStore.menus)
+      userStore.setDynamicRoutesLoaded(true)
+    }
+    return
+  }
+
+  if (!authorizationLoadPromise) {
+    const sessionRevision = userStore.sessionRevision
+    userStore.setPermissionsLoading(true)
+
+    const currentLoadPromise: Promise<void> = (async () => {
+      const [menuRes, permRes] = await Promise.all([
+        menuApi.getUserMenus(),
+        permissionApi.getUserApiPermissions().catch(error => {
+          console.warn('API权限获取失败，将按空权限处理:', error)
+          return { data: [] }
+        })
+      ])
+
+      if (!userStore.isLoggedIn || userStore.sessionRevision !== sessionRevision) {
+        throw new StaleSessionError('登录会话已切换，忽略旧权限响应')
+      }
+
+      const rawMenus = Array.isArray(menuRes.data) ? menuRes.data : []
+      const menus = filterAvailableMenus(rawMenus)
+      const apiPermissions = Array.isArray(permRes.data) ? permRes.data : []
+      userStore.setMenus(menus)
+      userStore.setApiPermissions(apiPermissions)
+      userStore.setPermissionsLoaded(true)
+
+      addDynamicRoutes(menus)
+      userStore.setDynamicRoutesLoaded(true)
+    })().finally(() => {
+      // 清理时只修改自己对应的请求，避免旧会话覆盖新会话的 loading 状态。
+      if (authorizationLoadPromise === currentLoadPromise) {
+        authorizationLoadPromise = null
+        userStore.setPermissionsLoading(false)
+      }
+    })
+
+    authorizationLoadPromise = currentLoadPromise
+  }
+
+  await authorizationLoadPromise
 }
 
 // 路由守卫保持不变
@@ -193,29 +288,24 @@ router.beforeEach(async (to, from, next) => {
    * 场景 : 用户已登录,但应用还没有加载用户的菜单权限
    * 为什么 : 实现权限控制,不同用户看到不同的菜单
    */
-  if (userStore.menus.length === 0 || userStore.apiPermissions.length === 0) {
+  if (!userStore.permissionsLoaded ||
+    !userStore.dynamicRoutesLoaded ||
+    !dynamicRoutesRegistered) {
     try {
-      // 使用Promise.all同时获取菜单和权限
-      const [menuRes, permRes] = await Promise.all([
-        menuApi.getUserMenus(),
-        permissionApi.getUserApiPermissions().catch(() => ({ data: [] })) // 避免权限接口失败影响菜单
-      ])
-      // console.log("权限接口返回信息:{}",permRes)
-      // console.log("菜单接口返回信息:{}",menuRes)
-      // 设置菜单
-      userStore.setMenus(menuRes.data || [])
+      await ensureAuthorizationReady(userStore)
 
-      // 设置API权限
-      if (permRes) {
-        userStore.setApiPermissions(permRes.data || [])
+      if (!userStore.isLoggedIn) {
+        next('/login')
+        return
       }
 
-      // 动态添加路由
-      addDynamicRoutes(menuRes.data)
-
-      // 重新跳转
+      // 首次注册动态路由后重新解析当前地址，支持刷新和直接打开深层路由。
       next({ ...to, replace: true })
     } catch (error) {
+      if (error instanceof StaleSessionError) {
+        next(userStore.isLoggedIn ? { ...to, replace: true } : '/login')
+        return
+      }
       console.error('权限获取失败:', error)
       // 如果 token 已被拦截器清空（登录过期），直接跳转登录页
       if (!userStore.isLoggedIn) {

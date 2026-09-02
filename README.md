@@ -1,5 +1,5 @@
 # MOK Vue Admin
-MOK Vue Admin 是一个基于 Vue 3 + TypeScript + Vite 构建的中后台前端解决方案。它提供了完整的权限控制（动态路由、菜单、按钮）、丰富的业务模块（用户、角色、权限、文件、订单、商品、优惠券等）以及开箱即用的代码结构。项目采用 Pinia 进行状态管理，使用 Element Plus 作为 UI 组件库，并集成了 Axios 请求封装、路由守卫、国际化（中文）等基础能力。
+MOK Vue Admin 是一个基于 Vue 3 + TypeScript + Vite 构建的中后台前端解决方案。它提供了完整的权限控制（动态路由、菜单、按钮）、常用的系统管理模块（用户、角色、权限、部门、文件等）以及开箱即用的代码结构。项目采用 Pinia 进行状态管理，使用 Element Plus 作为 UI 组件库，并集成了 Axios 请求封装、路由守卫和 Element Plus 中文语言包等基础能力。
 
 ## **技术栈**
 **核心框架**：Vue 3 + TypeScript
@@ -16,12 +16,12 @@ MOK Vue Admin 是一个基于 Vue 3 + TypeScript + Vite 构建的中后台前端
 
 代码规范：ESLint + TypeScript
 
-**其他**：@element-plus/icons-vue、lodash-es 等
+**其他**：@element-plus/icons-vue、marked、DOMPurify、highlight.js 等
 
 ## 功能特性
 ✅ 用户登录：集成验证码、Token 刷新、自动登录
 
-✅ 权限控制：基于动态路由的菜单权限 + 基于按钮/接口的权限指令（hasPermission）
+✅ 权限控制：基于动态路由的菜单权限 + 基于按钮/接口的权限判断方法（hasPermission）
 
 ✅ 仪表盘：系统状态监控（健康检查、内存使用、运行时间）
 
@@ -35,13 +35,7 @@ MOK Vue Admin 是一个基于 Vue 3 + TypeScript + Vite 构建的中后台前端
 
 ✅ 操作日志：记录用户操作，支持按条件查询、定时清理
 
-✅ 订单管理：订单列表、支付、取消（模拟接口）
-
-✅ 商品管理：商品增删改查、秒杀设置、优惠券配置
-
-✅ 秒杀管理：测试接口（下单、获取验证码、初始化库存）
-
-✅ 个人中心：查看/修改个人信息、修改密码
+✅ 个人中心：查看个人信息、修改密码
 
 ## 项目结构
 
@@ -73,12 +67,6 @@ mok-vue-admin/
 │   │   │   ├── profile/         # 个人中心
 │   │   │   └── welcome/         # 欢迎页
 │   │   ├── error/               # 错误页（404）
-│   │   ├── order/               # 订单模块
-│   │   │   ├── coupon/          # 优惠券管理
-│   │   │   ├── delivery/        # 发货管理
-│   │   │   ├── order/           # 订单管理
-│   │   │   ├── product/         # 商品管理
-│   │   │   └── seckill/         # 秒杀管理
 │   │   ├── system/              # 系统管理
 │   │   │   ├── files/           # 文件管理
 │   │   │   ├── operation-log/   # 操作日志
@@ -99,7 +87,7 @@ mok-vue-admin/
 
 ## 快速开始
 ### 环境要求
-Node.js 16.x 或更高版本
+Node.js `^20.19.0` 或 `>=22.12.0`
 
 包管理器npm
 

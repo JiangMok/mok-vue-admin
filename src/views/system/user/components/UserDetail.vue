@@ -123,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UserInfo, RoleItem } from '@/types'
 import {roleApi, userApi} from '@/api'

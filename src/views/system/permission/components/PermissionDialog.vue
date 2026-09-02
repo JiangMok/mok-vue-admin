@@ -486,7 +486,7 @@ watch(() => props.visible, async (newVal) => {
 })
 
 // 监听类型变化，动态调整验证规则
-watch(() => formData.type, (newType) => {
+watch(() => formData.type, (_newType) => {
   // 更新验证规则
   if (formRef.value) {
     formRef.value.clearValidate()

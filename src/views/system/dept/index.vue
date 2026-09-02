@@ -158,12 +158,6 @@ const handleDelete = async (row: DeptItem) => {
   }
 }
 
-const handleDetail = (row: DeptItem) => {
-  selectedDeptId.value = row.id
-  selectedDeptData.value = row
-  detailDialogVisible.value = true
-}
-
 const handleEditFromDetail = (deptId: string) => {
   detailDialogVisible.value = false
   const dept = deptList.value.find(item => item.id === deptId)

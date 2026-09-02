@@ -85,8 +85,13 @@ const fetchList = async () => {
       pageSize: pageSize.value
     })
     if (res.code === 200) {
-      list.value = res.data?.data || []
-      total.value = res.data?.total || 0
+      const page = res.data
+      list.value = page?.records || []
+      total.value = page?.total || 0
+      if (page) {
+        pageNum.value = page.current
+        pageSize.value = page.size
+      }
     } else {
       ElMessage.error(res.msg || '获取列表失败')
     }

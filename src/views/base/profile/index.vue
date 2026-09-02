@@ -106,15 +106,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { ElMessage, type FormInstance, type UploadFile } from 'element-plus'
-import { User, Camera } from '@element-plus/icons-vue'
-import type { UploadProps } from 'element-plus'
+import { ElMessage, type FormInstance } from 'element-plus'
+import { User } from '@element-plus/icons-vue'
 import {userApi} from "@/api";
 import type { PasswordUpdateRequest } from '@/types'
 
 const formRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
-const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL+'/files/uploadAvatar')
 const userStore = useUserStore()
 const loading = ref(false)
 const userInfo = reactive({
@@ -168,7 +166,6 @@ const passwordRules = {
   ]
 }
 
-const saving = ref(false)
 const changingPassword = ref(false)
 
 const initUserInfo = async () => {
@@ -195,60 +192,6 @@ const initUserInfo = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  const isJPGorPNG = rawFile.type === 'image/jpeg' || rawFile.type === 'image/png'
-  const isLt2M = rawFile.size / 1024 / 1024 < 2
-  if (!isJPGorPNG) {
-    ElMessage.error('头像图片只能是 JPG/PNG 格式!')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('头像图片大小不能超过 2MB!')
-    return false
-  }
-  return true
-}
-
-const handleAvatarChange = (uploadFile: UploadFile) => {
-  const file = uploadFile.raw
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userInfo.avatar = e.target?.result as string
-      ElMessage.success('头像上传成功')
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const saveUserInfo = () => {
-  if (!formRef.value) return
-  formRef.value.validate((valid) => {
-    if (valid) {
-      saving.value = true
-      setTimeout(() => {
-        userStore.setUserInfo({
-          createTime: userInfo.updateTime,
-          id: userInfo.id,
-          status: userInfo.status,
-          updateTime: userInfo.updateTime,
-          username: userInfo.username,
-          nickname: userInfo.nickname,
-          phone: userInfo.phone,
-          email: userInfo.email,
-          avatar: userInfo.avatar
-        })
-        saving.value = false
-        ElMessage.success('个人信息保存成功')
-      }, 1000)
-    }
-  })
-}
-
-const resetForm = () => {
-  initUserInfo()
 }
 
 const showPasswordDialog = () => {

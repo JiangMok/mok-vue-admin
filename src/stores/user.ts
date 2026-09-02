@@ -1,6 +1,29 @@
 import { defineStore } from 'pinia'
 import type { UserInfo, MenuItem, ApiPermission, LoginResponse } from '@/types'
 
+type SessionCleanupHandler = () => void
+
+const sessionCleanupHandlers = new Set<SessionCleanupHandler>()
+
+/**
+ * 注册与当前登录会话绑定的清理逻辑（例如移除动态路由）。
+ * 放在 store 模块中可以避免 user store 与 router 之间的循环导入。
+ */
+export const registerSessionCleanupHandler = (handler: SessionCleanupHandler) => {
+  sessionCleanupHandlers.add(handler)
+  return () => sessionCleanupHandlers.delete(handler)
+}
+
+const runSessionCleanupHandlers = () => {
+  sessionCleanupHandlers.forEach(handler => {
+    try {
+      handler()
+    } catch (error) {
+      console.error('清理登录会话资源失败:', error)
+    }
+  })
+}
+
 const readStoredRoles = (): string[] => {
   try {
     const roles = JSON.parse(localStorage.getItem('roles') || '[]')
@@ -21,7 +44,11 @@ export const useUserStore = defineStore('user', {
     roles: readStoredRoles(),
     menus: [] as MenuItem[],
     apiPermissions: [] as ApiPermission[],  // 新增：API权限列表
-    permissions: [] as string[]  // 合并后的权限列表（包含菜单code和API权限code）
+    permissions: [] as string[],  // 合并后的权限列表（包含菜单code和API权限code）
+    permissionsLoaded: false,     // 菜单和API权限是否已完成加载（允许结果为空）
+    permissionsLoading: false,
+    dynamicRoutesLoaded: false,
+    sessionRevision: 0            // 会话切换时递增，用于丢弃旧会话的异步响应
   }),
 
   getters: {
@@ -105,9 +132,12 @@ export const useUserStore = defineStore('user', {
 
     // 合并权限
     mergePermissions(menuCodes: string[], apiCodes: string[]) {
-      // 给菜单权限添加前缀，以区分类型
-      const menuPerms = menuCodes.map(code => `menu:${code}`)
-      const apiPerms = apiCodes.map(code => `api:${code}`)
+      const addPrefix = (code: string, prefix: 'menu' | 'api') =>
+        code.startsWith(`${prefix}:`) ? code : `${prefix}:${code}`
+
+      // 调用方可能传入已带命名空间的权限，避免生成 menu:menu:* / api:api:*。
+      const menuPerms = menuCodes.filter(Boolean).map(code => addPrefix(code, 'menu'))
+      const apiPerms = apiCodes.filter(Boolean).map(code => addPrefix(code, 'api'))
 
       // 合并并去重
       this.permissions = [...new Set([...menuPerms, ...apiPerms])]
@@ -121,16 +151,19 @@ export const useUserStore = defineStore('user', {
       // 2. 带前缀检查（如 api:system:user:list）
       // 3. 菜单权限检查（如 menu:system:user）
 
-      // 先检查直接权限
-      if (this.permissions.includes(`api:${perm}`) ||
-        this.permissions.includes(`menu:${perm}`)) {
+      const normalizedPerm = perm.replace(/^(api|menu):/, '')
+
+      // 先检查直接权限（兼容传入带 api:/menu: 前缀的权限）
+      if (this.permissions.includes(perm) ||
+        this.permissions.includes(`api:${normalizedPerm}`) ||
+        this.permissions.includes(`menu:${normalizedPerm}`)) {
         return true
       }
 
       // 再检查是否有通配符权限
       // 例如：如果有 system:user:* 权限，则 system:user:list 也通过
-      if (perm.includes(':')) {
-        const parts = perm.split(':')
+      if (normalizedPerm.includes(':')) {
+        const parts = normalizedPerm.split(':')
         for (let i = parts.length - 1; i > 0; i--) {
           const wildcardPerm = parts.slice(0, i).join(':') + ':*'
           if (this.permissions.includes(`api:${wildcardPerm}`)) {
@@ -142,8 +175,33 @@ export const useUserStore = defineStore('user', {
       return false
     },
 
+    setPermissionsLoaded(loaded: boolean) {
+      this.permissionsLoaded = loaded
+    },
+
+    setPermissionsLoading(loading: boolean) {
+      this.permissionsLoading = loading
+    },
+
+    setDynamicRoutesLoaded(loaded: boolean) {
+      this.dynamicRoutesLoaded = loaded
+    },
+
+    resetAuthorizationState() {
+      runSessionCleanupHandlers()
+      this.menus = []
+      this.apiPermissions = []
+      this.permissions = []
+      this.permissionsLoaded = false
+      this.permissionsLoading = false
+      this.dynamicRoutesLoaded = false
+      this.sessionRevision += 1
+    },
+
     // 登录成功后的处理
-    async afterLogin(data: LoginResponse) {
+    afterLogin(data: LoginResponse) {
+      // 防止同一 SPA 生命周期内切换账号时沿用上一个账号的菜单和动态路由。
+      this.resetAuthorizationState()
       this.setToken(data.token)
       this.setRefreshToken(data.refreshToken)
       this.setRoles(data.roles || [])
@@ -166,22 +224,6 @@ export const useUserStore = defineStore('user', {
         nickname: data.nickname,
         avatar: data.avatar
       }))
-
-      // 登录后获取API权限
-      await this.fetchApiPermissions()
-    },
-
-    // 获取API权限
-    async fetchApiPermissions() {
-      try {
-        const { permissionApi } = await import('@/api/modules/permission')
-        const res = await permissionApi.getUserApiPermissions()
-        if (res.code === 200) {
-          this.setApiPermissions(res.data)
-        }
-      } catch (error) {
-        console.error('获取API权限失败:', error)
-      }
     },
 
     // 其他方法保持不变...
@@ -226,9 +268,7 @@ export const useUserStore = defineStore('user', {
       this.refreshToken = ''
       this.userInfo = null
       this.roles = []
-      this.menus = []
-      this.apiPermissions = []
-      this.permissions = []
+      this.resetAuthorizationState()
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('userInfo')
@@ -256,11 +296,6 @@ export const useUserStore = defineStore('user', {
       }
 
       this.roles = readStoredRoles()
-
-      // 初始化时也尝试获取API权限（如果有token的话）
-      if (this.token) {
-        this.fetchApiPermissions().catch(console.error)
-      }
     }
   }
 })

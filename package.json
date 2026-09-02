@@ -12,8 +12,8 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "eslint . --cache",
-    "lint:fix": "eslint . --fix --cache"
+    "lint": "eslint . --cache --cache-location node_modules/.cache/eslint/.eslintcache",
+    "lint:fix": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/.eslintcache"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",

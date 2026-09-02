@@ -227,7 +227,7 @@ const shortcuts = [
   },
 ]
 
-const disabledDate = (time: Date) => {
+const disabledDate = (_time: Date) => {
   // return time.getTime() > Date.now()
   return false
 }

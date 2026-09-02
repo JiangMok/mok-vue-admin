@@ -20,28 +20,16 @@ export interface FileItem {
   createBy?: string
   updateBy?: string
   isDeleted: number
-  businessType: string
+  businessType: number
 }
 
 /**
  * 文件上传响应类型
  */
 export interface FileUploadResponse {
-  fileId: string
+  id: string
   originalName: string
   fileUrl: string
   fileSize: number
   fileType: string
-}
-
-/**
- * 文件表单数据类型
- */
-export interface FileFormData {
-  id?: string
-  originalName?: string
-  description?: string
-  tags?: string
-  businessType?: string
-  businessId?: string
 }

@@ -225,25 +225,6 @@
           @change="handleFileSelect"
         />
 
-        <!-- 上传选项 -->
-        <div class="upload-options">
-          <el-form :model="uploadForm" label-width="80px">
-            <el-form-item label="业务类型">
-              <el-select v-model="uploadForm.businessType" placeholder="请选择业务类型" clearable>
-                <el-option label="通用文件" value="general" />
-                <el-option label="用户头像" value="1" />
-                <el-option label="产品图片" value="product" />
-                <el-option label="合同文档" value="contract" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="业务ID">
-              <el-input v-model="uploadForm.businessId" placeholder="可选，关联业务ID" />
-            </el-form-item>
-            <el-form-item label="文件描述">
-              <el-input v-model="uploadForm.description" type="textarea" placeholder="可选，文件描述" />
-            </el-form-item>
-          </el-form>
-        </div>
       </div>
 
       <template #footer>
@@ -353,13 +334,6 @@ const selectedFile = ref<File | null>(null)
 const isDragOver = ref(false)
 const uploading = ref(false)
 
-// 上传表单
-const uploadForm = reactive({
-  businessType: 'general',
-  businessId: '',
-  description: ''
-})
-
 // 预览相关
 const currentFile = ref<FileItem | null>(null)
 const previewDialogVisible = ref(false)
@@ -420,9 +394,6 @@ const handleUploadDialogOpen = () => {
   // 重置上传状态
   selectedFile.value = null
   isDragOver.value = false
-  uploadForm.businessType = 'general'
-  uploadForm.businessId = ''
-  uploadForm.description = ''
 }
 
 // 关闭上传对话框
@@ -533,21 +504,8 @@ const handleUploadSubmit = async () => {
   try {
     uploading.value = true
 
-    // 创建FormData
-    const formData = new FormData()
-    formData.append('file', selectedFile.value)
-    formData.append('businessType', uploadForm.businessType)
-
-    if (uploadForm.businessId) {
-      formData.append('businessId', uploadForm.businessId)
-    }
-
-    if (uploadForm.description) {
-      formData.append('description', uploadForm.description)
-    }
-
     // 调用上传API
-    const res = await fileApi.upload(formData)
+    const res = await fileApi.upload(selectedFile.value)
     // console.log('上传响应:', res)
 
     if (res.code === 200) {
@@ -753,13 +711,6 @@ const formatBusinessType = (type: number) => {
   }
   return typeMap[type] || '未知'
 }
-const getBusinessType = (type: number) => {
-  const typeMap: Record<number, string> = {
-    0: 'info',
-    1: 'primary'
-  }
-  return typeMap[type] || 'info'
-}
 </script>
 
 <style scoped>
@@ -909,10 +860,6 @@ const getBusinessType = (type: number) => {
 .file-size {
   color: #909399;
   font-size: 14px;
-}
-
-.upload-options {
-  margin-top: 20px;
 }
 
 /* 预览样式 */

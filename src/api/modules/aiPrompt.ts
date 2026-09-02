@@ -1,5 +1,13 @@
 import request from '@/utils/request.ts'
-import type { ApiResponse, PageResponse, AiSystemPromptConfig, AiSystemPromptConfigFormData } from '@/types'
+import type { ApiResponse, AiSystemPromptConfig, AiSystemPromptConfigFormData } from '@/types'
+
+export interface MyBatisPage<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
 
 /**
  * AI系统提示词配置 API
@@ -8,7 +16,7 @@ export const aiSystemPromptConfigApi = {
   getPage: (params: {
     pageNum: number
     pageSize: number
-  }): Promise<ApiResponse<PageResponse<AiSystemPromptConfig>>> => {
+  }): Promise<ApiResponse<MyBatisPage<AiSystemPromptConfig>>> => {
     return request.get('/ai-system-prompt-config/page', { params })
   },
   getById: (id: string): Promise<ApiResponse<AiSystemPromptConfig>> => {

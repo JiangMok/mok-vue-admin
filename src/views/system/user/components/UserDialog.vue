@@ -238,7 +238,10 @@ const formData = reactive<UserFormData>({
 // 角色列表
 const roleList = ref<RoleItem[]>([])
 const roleLoading = ref(false)
-const statusShow = ref(true)
+const statusShow = computed(() => {
+  const targetUserId = props.editData?.id
+  return !props.isEdit || !targetUserId || userStore.userId !== targetUserId
+})
 // 部门树
 const deptTree = ref<DeptItem[]>([])
 
@@ -343,42 +346,24 @@ const formRules: FormRules = {
 
 // ================== 新增：初始化表单数据（编辑时）==================
 const initFormData = async () => {
-  if (props.isEdit && props.editData) {
-    // console.log('编辑用户数据:', props.editData)
-    // const userId = userStore.userId
-    // const targetUserId = props.editData.id
-    // const isMe = userId === targetUserId
-    // if(isMe){
-    //   statusShow.value = false
-    // }
-    watch(
-      () => ({
-        userId: userStore.userId,
-        targetUserId: props.editData.id
-      }),
-      ({ userId, targetUserId }) => {
-        if (userId && targetUserId) {
-          statusShow.value = userId !== targetUserId
-        }
-      },
-      { immediate: true }  // 立即执行一次
-    )
+  const editData = props.editData
+  if (props.isEdit && editData) {
     // 填充表单数据
-    formData.username = props.editData.username || ''
-    formData.nickname = props.editData.nickname || ''
-    formData.phone = props.editData.phone || ''
-    formData.email = props.editData.email || ''
-    formData.avatar = props.editData.avatar || ''
-    formData.status = props.editData.status !== undefined ? props.editData.status : 1
-    formData.deptId = props.editData.deptId || ''
+    formData.username = editData.username || ''
+    formData.nickname = editData.nickname || ''
+    formData.phone = editData.phone || ''
+    formData.email = editData.email || ''
+    formData.avatar = editData.avatar || ''
+    formData.status = editData.status !== undefined ? editData.status : 1
+    formData.deptId = editData.deptId || ''
 
     // 显示头像
-    if (props.editData.avatar) {
-      avatarUrl.value = props.editData.avatar
+    if (editData.avatar) {
+      avatarUrl.value = editData.avatar
     }
 
     // ================== 新增：获取用户角色信息 ==================
-    await fetchUserRoles(props.editData.id)
+    await fetchUserRoles(editData.id)
 
   } else {
     // 新增模式，重置表单
@@ -559,14 +544,15 @@ const handleSubmit = async () => {
     // console.log('提交数据:', JSON.stringify(submitData, null, 2))
 
     // 调用API
-    if (props.isEdit && props.editData) {
+    const editData = props.editData
+    if (props.isEdit && editData) {
       // 编辑用户
-      const res = await userApi.updateUser({ id: props.editData.id, ...submitData })
+      const res = await userApi.updateUser({ id: editData.id, ...submitData })
       //如果是修改的当前帐号,则把userStore里的缓存信息一并修改
-      if(userStore.userId == props.editData.id){
+      if(userStore.userId == editData.id){
         userStore.setUserInfo({
           createTime: "",
-          id: props.editData.id,
+          id: editData.id,
           updateTime: "",
           status: submitData.status,
           username: submitData.username,

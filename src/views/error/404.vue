@@ -30,7 +30,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { CircleCloseFilled, ArrowLeft, HomeFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, HomeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
