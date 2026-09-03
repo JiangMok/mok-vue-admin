@@ -8,7 +8,6 @@ export interface MailSender {
   sslEnable: number
   fromAddress: string
   username: string
-  password?: string
   status: number
   createTime?: string
   updateTime?: string

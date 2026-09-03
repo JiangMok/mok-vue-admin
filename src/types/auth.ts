@@ -21,9 +21,11 @@ export interface LoginParams {
  * 登录响应
  */
 export interface LoginResponse {
+  /** 前端跨标签登录操作标识，不由后端返回。 */
+  authOperationId?: string
   token: string
   refreshToken: string
-  expiresIn: number
+  expiresIn: number // access token 剩余有效期，单位：秒
   tokenType: string
   username: string
   nickname: string

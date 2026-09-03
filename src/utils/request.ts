@@ -4,15 +4,63 @@ import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'a
 import axios from 'axios';
 // 3. 导入 Element Plus 的消息提示组件，用于在页面上弹出错误/成功提示
 import { ElMessage } from 'element-plus';
-import type { ApiResponse, LoginResponse } from '@/types';
+import type { ApiResponse, LoginResponse, UserInfo } from '@/types';
+import {
+  beginAuthLoginAttempt,
+  cancelAuthLoginAttempt,
+  AUTH_SESSION_STORAGE_KEY,
+  isAuthLogoutInProgress,
+  readAuthLoginAttempt,
+  readAuthSessionId,
+  readPersistedAuthSession,
+  waitForAuthLogoutCompletion,
+  writePersistedAuthSession,
+  withAuthLogoutLock,
+  withAuthSessionLock
+} from '@/utils/auth-session';
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
+  _authSessionId?: string
+  _authOperationId?: string
+  _authLockHeld?: boolean
 }
 
 interface PendingRequest {
   resolve: (token: string) => void
   reject: (error: unknown) => void
 }
+
+interface StoredSessionSnapshot {
+  sessionId: string
+  token: string
+  refreshToken: string
+  roles: string[]
+  userInfo: UserInfo
+}
+
+interface AdoptedSession {
+  token: string
+  accountChanged: boolean
+  sessionChanged: boolean
+  authorizationChanged: boolean
+}
+
+interface RefreshExecutionResult {
+  token: string
+  navigateToSafePage: boolean
+}
+
+interface RefreshSessionEvent {
+  type: 'refresh-complete' | 'refresh-failed'
+  userId: string
+  occurredAt: number
+}
+
+class SessionChangedError extends Error {}
+
+const REQUEST_TIMEOUT = 10000;
+const AUTH_SESSION_CHANNEL = 'mok-auth-session';
+const AUTH_REFRESH_EVENT_KEY = 'authRefreshEvent';
 
 // 6. 配置接口的基础地址：优先从环境变量中读取，如果没配置则默认使用 '/api'
 //    环境变量通常定义在 .env.development 或 .env.production 文件中
@@ -22,7 +70,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 //    AxiosInstance 是 axios 实例的类型
 const service: AxiosInstance = axios.create({
   baseURL,                  // 所有请求都会自动拼接这个基础路径
-  timeout: 10000,           // 请求超时时间设置为 10 秒，超时后请求会自动失败
+  timeout: REQUEST_TIMEOUT, // 请求超时时间设置为 10 秒，超时后请求会自动失败
   headers: {
     'Content-Type': 'application/json', // 默认告诉服务器我们发送的是 JSON 格式的数据
   },
@@ -34,7 +82,7 @@ const service: AxiosInstance = axios.create({
 //    这个实例没有任何拦截器，是最纯净的 axios 实例。
 const refreshAxios = axios.create({
   baseURL,                  // 使用相同的基础地址
-  timeout: 10000,           // 同样的超时时间
+  timeout: REQUEST_TIMEOUT, // 同样的超时时间
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,67 +91,319 @@ const refreshAxios = axios.create({
 // 9. 全局状态变量（定义在模块顶层，在整个应用生命周期内共享）
 let isRefreshing = false;                         // 标记是否正在刷新 token，防止同时发送多个刷新请求
 let requests: PendingRequest[] = [];              // 刷新期间等待重试的请求
+const authSessionChannel = typeof BroadcastChannel === 'undefined'
+  ? null
+  : new BroadcastChannel(AUTH_SESSION_CHANNEL);
 
-async function clearSessionAndRedirectToLogin() {
+function applyRefreshedCredentials(originalRequest: RetryableRequestConfig, newToken: string) {
+  originalRequest.headers.Authorization = `Bearer ${newToken}`;
+  // 退出请求触发刷新后，原请求体中的 refreshToken 已被轮换，必须替换为最新值。
+  if (originalRequest.url?.endsWith('/auth/logout')) {
+    const latestRefreshToken = readPersistedAuthSession()?.refreshToken ||
+      localStorage.getItem('refreshToken');
+    if (latestRefreshToken) {
+      originalRequest.data = JSON.stringify({ refreshToken: latestRefreshToken });
+    }
+  }
+}
+
+async function clearSessionAndRedirectToLogin(expectedSessionId = readAuthSessionId()) {
   const [{ useUserStore }, { default: router }] = await Promise.all([
     import('@/stores/user'),
     import('@/router')
   ])
   const userStore = useUserStore()
-  userStore.clear()
+  const cleared = await userStore.clearIfCurrent(expectedSessionId)
+  if (!cleared) {
+    const syncResult = await withAuthSessionLock(async () => {
+      const latestSession = readStoredSession()
+      return latestSession
+        ? synchronizeStoredSession(latestSession, '', '', false)
+        : null
+    })
+    if (syncResult?.authorizationChanged) {
+      await navigateToSafePage()
+    }
+    return false
+  }
   delete service.defaults.headers.Authorization
   if (router.currentRoute.value.path !== '/login') {
     await router.replace('/login')
   }
+  return true
 }
+
+function readStoredSession(): StoredSessionSnapshot | null {
+  const persistedSession = readPersistedAuthSession();
+  if (persistedSession) return persistedSession;
+
+  const sessionId = readAuthSessionId();
+  const token = localStorage.getItem('token') || '';
+  const refreshToken = localStorage.getItem('refreshToken') || '';
+  if (!sessionId || !token || !refreshToken) return null;
+
+  try {
+    const rolesValue: unknown = JSON.parse(localStorage.getItem('roles') || '[]');
+    const userInfoValue: unknown = JSON.parse(localStorage.getItem('userInfo') || 'null');
+    if (!userInfoValue || typeof userInfoValue !== 'object' ||
+      typeof (userInfoValue as Partial<UserInfo>).id !== 'string') {
+      return null;
+    }
+
+    const roles = Array.isArray(rolesValue)
+      ? rolesValue.filter((role): role is string => typeof role === 'string')
+      : [];
+    return {
+      sessionId,
+      token,
+      refreshToken,
+      roles,
+      userInfo: userInfoValue as UserInfo
+    };
+  } catch {
+    return null;
+  }
+}
+
+function publishRefreshSessionEvent(type: RefreshSessionEvent['type'], userId: string) {
+  const event = { type, userId, occurredAt: Date.now() } satisfies RefreshSessionEvent;
+  authSessionChannel?.postMessage(event);
+  // BroadcastChannel 不可用时，storage 事件仍可作为跨标签完成信号。
+  localStorage.setItem(AUTH_REFRESH_EVENT_KEY, JSON.stringify(event));
+}
+
+async function synchronizeStoredSession(
+  snapshot: StoredSessionSnapshot,
+  expectedUserId = '',
+  expectedSessionId = '',
+  navigateAfterSync = true
+): Promise<AdoptedSession> {
+  const { useUserStore } = await import('@/stores/user');
+  const userStore = useUserStore();
+  const previousUserId = expectedUserId || userStore.userInfo?.id || '';
+  const previousSessionId = expectedSessionId || userStore.authSessionId || '';
+  const accountChanged = Boolean(previousUserId && previousUserId !== snapshot.userInfo.id);
+  const sessionChanged = previousSessionId !== snapshot.sessionId;
+  const rolesChanged = userStore.roles.length !== snapshot.roles.length ||
+    userStore.roles.some(role => !snapshot.roles.includes(role));
+
+  if (accountChanged && !userStore.userInfo?.id) {
+    userStore.resetAuthorizationState();
+  }
+  userStore.synchronizeStoredSession(snapshot);
+  service.defaults.headers.Authorization = `Bearer ${snapshot.token}`;
+
+  if (navigateAfterSync && (accountChanged || sessionChanged || rolesChanged)) {
+    await navigateToSafePage();
+  }
+  return {
+    token: snapshot.token,
+    accountChanged,
+    sessionChanged,
+    authorizationChanged: accountChanged || sessionChanged || rolesChanged
+  };
+}
+
+async function navigateToSafePage() {
+  const { default: router } = await import('@/router');
+  // force 确保当前已在 dashboard 时也重新执行守卫并加载新会话权限。
+  await router.replace({ path: '/dashboard', force: true });
+}
+
+async function adoptRotatedCredentials(
+  attemptedRefreshToken: string,
+  expectedUserId: string,
+  expectedSessionId: string
+): Promise<AdoptedSession | null> {
+  // 在同一把锁内完成读取和 Pinia 同步，防止旧快照反向覆盖刚提交的新会话。
+  const adoptedSession = await withAuthSessionLock(async () => {
+    const snapshot = readStoredSession();
+    if (!snapshot || snapshot.refreshToken === attemptedRefreshToken) return null;
+    return synchronizeStoredSession(snapshot, expectedUserId, expectedSessionId, false);
+  });
+  if (adoptedSession?.authorizationChanged) {
+    await navigateToSafePage();
+  }
+  return adoptedSession;
+}
+
+let storageSyncTimer: number | undefined;
+const scheduleStoredSessionSync = (expectedSessionId = readAuthSessionId()) => {
+  window.clearTimeout(storageSyncTimer);
+  storageSyncTimer = window.setTimeout(async () => {
+    const syncResult = await withAuthSessionLock(async () => {
+      const snapshot = readStoredSession();
+      if (!snapshot) return null;
+      return synchronizeStoredSession(snapshot, '', '', false);
+    });
+    if (syncResult) {
+      if (syncResult.authorizationChanged) {
+        await navigateToSafePage();
+      }
+      return;
+    }
+
+    if (!localStorage.getItem('token') && !localStorage.getItem('refreshToken')) {
+      await clearSessionAndRedirectToLogin(expectedSessionId);
+    }
+  }, 0);
+};
+
+window.addEventListener('storage', (event: StorageEvent) => {
+  if (event.key === AUTH_SESSION_STORAGE_KEY) {
+    let previousSessionId = '';
+    try {
+      previousSessionId = event.oldValue
+        ? (JSON.parse(event.oldValue) as Partial<StoredSessionSnapshot>).sessionId || ''
+        : '';
+    } catch {
+      previousSessionId = '';
+    }
+    scheduleStoredSessionSync(previousSessionId);
+    return;
+  }
+  if (event.key === AUTH_REFRESH_EVENT_KEY && event.newValue) {
+    try {
+      const refreshEvent = JSON.parse(event.newValue) as RefreshSessionEvent;
+      if (refreshEvent.type === 'refresh-complete') scheduleStoredSessionSync();
+    } catch {
+      // 忽略其他脚本写入的无效事件。
+    }
+  }
+});
+
+authSessionChannel?.addEventListener('message', (event: MessageEvent<RefreshSessionEvent>) => {
+  if (event.data?.type === 'refresh-complete') scheduleStoredSessionSync();
+});
 
 /**
  * 10. 刷新 token 函数
  *     功能：携带本地存储的 refreshToken 去后端换取新的 accessToken
  *     返回值：Promise<string>，成功时返回新的 accessToken，失败时抛出异常
  */
-async function refreshToken(): Promise<string> {
-  // 10.1 从 localStorage 中取出 refreshToken（刷新令牌）
-  const refreshTokenStr = localStorage.getItem('refreshToken');
+async function refreshToken(originalRequest: RetryableRequestConfig): Promise<string> {
+  // 10.1 原子快照无需等待写锁；失败请求携带的 accessToken 才是并发刷新基线。
+  const initialSession = readStoredSession();
+  let refreshTokenStr = initialSession?.refreshToken || '';
+  const expectedUserId = initialSession?.userInfo.id || '';
+  const expectedSessionId = originalRequest._authSessionId || initialSession?.sessionId || '';
+  const authorization = originalRequest.headers?.Authorization;
+  const failedAccessToken = typeof authorization === 'string'
+    ? authorization.replace(/^Bearer\s+/i, '')
+    : '';
   // 10.2 如果没有 refreshToken，说明用户从未登录或已经被清空，直接抛出错误
   if (!refreshTokenStr) {
     throw new Error('没有 refreshToken');
   }
-
-  // 10.3 使用独立的 refreshAxios 实例调用刷新接口，避免触发主实例的刷新拦截器
-  const response: AxiosResponse<ApiResponse<LoginResponse>> = await refreshAxios.post(
-    '/auth/refresh',
-    { refreshToken: refreshTokenStr }
-  );
-
-  // 10.4 检查后端返回的业务状态码。即便 HTTP 状态码是 200，业务上也可能失败（例如 refreshToken 过期）
-  //     后端约定 code 为 200 才算成功，其他值都表示失败。
-  if (response.data.code !== 200) {
-    // 抛出错误，将后端的错误信息带出去，外层会捕获并跳转登录页
-    throw new Error(response.data.msg || '刷新token失败');
+  if (typeof navigator === 'undefined' || !navigator.locks) {
+    // 缺少跨标签原子锁时不写轮换凭据，避免旧刷新响应覆盖刚登录的新账号。
+    throw new Error('当前浏览器不支持安全的登录续期，请重新登录');
   }
 
-  // 10.5 从响应数据中解构出新的 accessToken 和 refreshToken
-  const loginData = response.data.data;
-  const newToken = loginData.token;
-  const newRefreshToken = loginData.refreshToken;
+  try {
+    const refreshResult = await withAuthSessionLock<RefreshExecutionResult>(async () => {
+      // 等待跨标签锁后先接管已轮换的凭据，避免再次消费同一个 refreshToken。
+      const sessionBeforeRefresh = readStoredSession();
+      if (sessionBeforeRefresh && sessionBeforeRefresh.sessionId !== expectedSessionId) {
+        await synchronizeStoredSession(
+          sessionBeforeRefresh, expectedUserId, expectedSessionId, false);
+        throw new SessionChangedError('其他标签页已经切换登录会话');
+      }
+      if (!sessionBeforeRefresh || readAuthSessionId() !== expectedSessionId) {
+        throw new SessionChangedError('登录会话已经发生变化');
+      }
+      if (failedAccessToken && sessionBeforeRefresh.token !== failedAccessToken) {
+        const adoptedSession = await synchronizeStoredSession(
+          sessionBeforeRefresh, expectedUserId, expectedSessionId, false);
+        return {
+          token: sessionBeforeRefresh.token,
+          navigateToSafePage: adoptedSession.authorizationChanged
+        };
+      }
+      refreshTokenStr = sessionBeforeRefresh.refreshToken;
 
-  // 10.6 将新 token 保存到 localStorage 中，覆盖旧的 token
-  localStorage.setItem('token', newToken);
-  localStorage.setItem('refreshToken', newRefreshToken);
+      // 10.3 使用独立实例刷新，跨标签写锁会一直持有到凭据完整写入。
+      const [{ useUserStore }, response] = await Promise.all([
+        import('@/stores/user'),
+        refreshAxios.post<unknown, AxiosResponse<ApiResponse<LoginResponse>>>(
+          '/auth/refresh',
+          { refreshToken: refreshTokenStr }
+        )
+      ]);
 
-  // 同步 Pinia 中的登录态，避免刷新成功后页面仍持有旧 token 或旧角色
-  const { useUserStore } = await import('@/stores/user');
-  const userStore = useUserStore();
-  userStore.setToken(newToken);
-  userStore.setRefreshToken(newRefreshToken);
-  userStore.setRoles(loginData.roles || []);
+      // 10.4 HTTP 成功后仍需检查业务状态码。
+      if (response.data.code !== 200) {
+        throw new Error(response.data.msg || '刷新token失败');
+      }
 
-  // 10.7 更新主实例 service 的默认请求头，让后续所有请求自动携带新的 accessToken
-  service.defaults.headers.Authorization = `Bearer ${newToken}`;
+      const loginData = response.data.data;
+      if (!loginData || (expectedUserId && loginData.userId !== expectedUserId)) {
+        throw new Error('刷新令牌所属用户不一致');
+      }
 
-  // 10.8 返回新的 accessToken
-  return newToken;
+      // 不支持 Web Locks 时依靠会话标识二次校验，防止旧响应覆盖新登录。
+      if (readAuthSessionId() !== expectedSessionId ||
+        (readPersistedAuthSession()?.refreshToken || localStorage.getItem('refreshToken')) !==
+          refreshTokenStr) {
+        throw new SessionChangedError('登录会话已经发生变化');
+      }
+
+      const userStore = useUserStore();
+      const nextRoles = loginData.roles || [];
+      const rolesChanged = userStore.roles.length !== nextRoles.length ||
+        userStore.roles.some(role => !nextRoles.includes(role));
+      if (rolesChanged) {
+        userStore.resetAuthorizationState();
+      }
+      userStore.setRoles(nextRoles);
+      userStore.setToken(loginData.token);
+      if (!userStore.userInfo) {
+        userStore.setUserInfo({
+          id: loginData.userId,
+          username: loginData.username,
+          nickname: loginData.nickname,
+          phone: '',
+          email: '',
+          avatar: loginData.avatar || null,
+          status: 1,
+          createTime: new Date().toISOString(),
+          updateTime: new Date().toISOString()
+        });
+      }
+      // 先更新兼容字段，再用完整快照作为跨标签页的原子提交点。
+      userStore.setRefreshToken(loginData.refreshToken);
+      writePersistedAuthSession({
+        sessionId: expectedSessionId,
+        token: loginData.token,
+        refreshToken: loginData.refreshToken,
+        roles: nextRoles,
+        userInfo: userStore.userInfo as UserInfo
+      });
+
+      service.defaults.headers.Authorization = `Bearer ${loginData.token}`;
+      publishRefreshSessionEvent('refresh-complete', loginData.userId);
+      return { token: loginData.token, navigateToSafePage: rolesChanged };
+    });
+    if (refreshResult.navigateToSafePage) {
+      await navigateToSafePage();
+    }
+    return refreshResult.token;
+  } catch (refreshError) {
+    if (refreshError instanceof SessionChangedError) {
+      throw refreshError;
+    }
+
+    const rotatedSession = await adoptRotatedCredentials(
+      refreshTokenStr, expectedUserId, expectedSessionId);
+    if (rotatedSession) {
+      if (rotatedSession.sessionChanged) {
+        throw new SessionChangedError('其他标签页已经切换登录会话');
+      }
+      return rotatedSession.token;
+    }
+    publishRefreshSessionEvent('refresh-failed', expectedUserId);
+    throw refreshError;
+  }
 }
 
 /**
@@ -119,7 +419,7 @@ async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfi
       // 11.3 往队列中添加一个回调函数，该回调会在刷新成功后被执行，参数是新 token
       requests.push({
         resolve: (newToken: string) => {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          applyRefreshedCredentials(originalRequest, newToken);
           resolve(service(originalRequest));
         },
         reject
@@ -132,7 +432,7 @@ async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfi
 
   try {
     // 11.7 调用 refreshToken 函数获取新 token
-    const newToken = await refreshToken();
+    const newToken = await refreshToken(originalRequest);
 
     // 11.8 刷新成功：遍历请求队列，依次执行队列中的每一个回调函数，传入新 token
     requests.forEach(request => request.resolve(newToken));
@@ -140,9 +440,16 @@ async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfi
     requests = [];
 
     // 11.10 重试当前这个原始的失败请求，注意要用 service 实例发送，确保走完整的拦截器
-    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+    applyRefreshedCredentials(originalRequest, newToken);
     return service(originalRequest);
   } catch (refreshError) {
+    // 其他标签页已经切换账号时，保留接管后的新会话，但绝不能用新身份重放旧请求。
+    if (refreshError instanceof SessionChangedError) {
+      requests.forEach(request => request.reject(refreshError));
+      requests = [];
+      return Promise.reject(refreshError);
+    }
+
     // 11.11 刷新失败（例如 refreshToken 也过期了）
     //      弹出友好的提示信息，告诉用户需要重新登录
     ElMessage.error("登录信息失效,请重新登录")
@@ -152,7 +459,7 @@ async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfi
     requests = []; // 清空队列，防止内存泄漏
 
     // 11.13 清除 Pinia store 中的用户状态（token、用户信息、权限菜单等）
-    await clearSessionAndRedirectToLogin();
+    await clearSessionAndRedirectToLogin(originalRequest._authSessionId);
 
     // 11.15 将刷新失败的错误继续向上抛出，让调用方知道本次请求已失败
     return Promise.reject(refreshError);
@@ -166,17 +473,47 @@ async function handleTokenRefreshAndRetry(originalRequest: RetryableRequestConfi
 // 作用：在请求发送之前对请求配置进行统一处理，比如自动添加 token
 service.interceptors.request.use(
   // 第一个参数：请求成功的处理函数（对 config 做修改后必须返回 config）
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
+    const retryableConfig = config as RetryableRequestConfig;
+    const isLoginRequest = config.url?.includes('/auth/login') === true;
+    if (isLoginRequest) {
+      retryableConfig._authOperationId = await withAuthLogoutLock(async () => {
+        let loginAttemptId = '';
+        while (!loginAttemptId) {
+          await waitForAuthLogoutCompletion();
+          loginAttemptId = await withAuthSessionLock(() =>
+            isAuthLogoutInProgress() ? '' : beginAuthLoginAttempt());
+        }
+        return loginAttemptId;
+      });
+    }
+    const readAuthSnapshot = () => {
+      const persistedSession = readPersistedAuthSession();
+      return {
+        sessionId: persistedSession?.sessionId || readAuthSessionId(),
+        token: persistedSession?.token || localStorage.getItem('token') || ''
+      };
+    };
+    const authSnapshot = retryableConfig._authLockHeld
+      ? readAuthSnapshot()
+      : await withAuthSessionLock(readAuthSnapshot);
+    const currentSessionId = authSnapshot.sessionId;
+    if (retryableConfig._authSessionId &&
+      retryableConfig._authSessionId !== currentSessionId) {
+      throw new SessionChangedError('请求所属登录会话已经切换');
+    }
     // 从本地存储获取 accessToken
-    const token = localStorage.getItem('token');
+    const token = authSnapshot.token;
     // 如果存在 token，则将其添加到请求头的 Authorization 字段中，格式为 "Bearer <token>"
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      retryableConfig._authSessionId ||= currentSessionId;
     }
     // 特殊处理：登录接口和获取验证码接口不需要 token，所以如果检测到是这些接口，就删除 Authorization 头
     // 为什么要删除？因为有些后端接口如果携带了无效 token 会直接报错
-    if (config.url?.includes('/auth/login') || config.url?.includes('/captcha/generate')) {
+    if (isLoginRequest || config.url?.includes('/captcha/generate')) {
       delete config.headers.Authorization;
+      delete retryableConfig._authSessionId;
     }
     // 必须返回 config，否则请求会被挂起
     return config;
@@ -194,7 +531,19 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   // 第一个参数：响应成功的处理函数（HTTP 状态码为 2xx 时进入）
   (response: AxiosResponse) => {
+    const responseConfig = response.config as RetryableRequestConfig;
+    if (responseConfig._authOperationId &&
+      responseConfig._authOperationId !== readAuthLoginAttempt()) {
+      return Promise.reject(new SessionChangedError('登录响应已被更新的操作取代'));
+    }
+    if (responseConfig._authSessionId &&
+      responseConfig._authSessionId !== readAuthSessionId()) {
+      return Promise.reject(new SessionChangedError('请求所属登录会话已经切换'));
+    }
     const data = response.data;   // 后端返回的实际数据体
+    if (responseConfig._authOperationId && data?.code === 200 && data.data) {
+      data.data.authOperationId = responseConfig._authOperationId;
+    }
 
     // 检查业务状态码：如果 code 存在且不等于 200，说明业务逻辑上出错了
     if (data.code !== undefined && data.code !== 200) {
@@ -202,7 +551,7 @@ service.interceptors.response.use(
       if (data.code === 3002) {
         const originalRequest = response.config as RetryableRequestConfig;
         // 添加 _retry 标记，防止同一个请求因为刷新后再次失败而陷入无限重试
-        if (!originalRequest._retry) {
+        if (!originalRequest._retry && !originalRequest._authLockHeld) {
           originalRequest._retry = true;
           // 调用刷新并重试的逻辑
           return handleTokenRefreshAndRetry(originalRequest);
@@ -222,18 +571,36 @@ service.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config as RetryableRequestConfig | undefined;
 
+    if (originalRequest?._authOperationId) {
+      if (originalRequest._authOperationId !== readAuthLoginAttempt()) {
+        return Promise.reject(new SessionChangedError('登录请求已被更新的操作取代'));
+      }
+      await withAuthSessionLock(() => {
+        if (originalRequest._authOperationId === readAuthLoginAttempt()) {
+          cancelAuthLoginAttempt();
+        }
+      });
+    }
+
+    if (originalRequest?._authSessionId &&
+      originalRequest._authSessionId !== readAuthSessionId()) {
+      return Promise.reject(new SessionChangedError('请求所属登录会话已经切换'));
+    }
+
     // 如果 HTTP 状态码是 401（Unauthorized）或者 3002（后端自定义），都视为 token 无效/过期
     // 并且该请求还没有被标记为已重试
     if ((error.response?.status === 401 || error.response?.status === 3002)
-        && originalRequest && !originalRequest._retry) {
+        && originalRequest && !originalRequest._retry && !originalRequest._authLockHeld) {
       originalRequest._retry = true;   // 标记已重试，防止死循环
 
       // 再次检查本地是否有 token 和 refreshToken
-      const token = localStorage.getItem('token');
-      const refreshTokenStr = localStorage.getItem('refreshToken');
+      const persistedSession = readPersistedAuthSession();
+      const token = persistedSession?.token || localStorage.getItem('token');
+      const refreshTokenStr = persistedSession?.refreshToken ||
+        localStorage.getItem('refreshToken');
       if (!token || !refreshTokenStr) {
         // 如果登录凭据不完整，清空完整会话并跳转登录页
-        await clearSessionAndRedirectToLogin();
+        await clearSessionAndRedirectToLogin(originalRequest._authSessionId);
         return Promise.reject(error);
       }
 

@@ -42,6 +42,7 @@ import {computed, watch, onBeforeUnmount} from 'vue'
 import {Loading} from '@element-plus/icons-vue'
 import {useAnalysisSSE} from '@/composables/useAnalysisSSE'
 import {renderMarkdown} from '@/utils/markdown'
+import {useUserStore} from '@/stores/user'
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
@@ -62,6 +63,7 @@ const emit = defineEmits<{
 }>()
 
 const {content, loading, error, completed, start, stop} = useAnalysisSSE()
+const userStore = useUserStore()
 
 // 将累积文本转为安全的 HTML
 const renderedMarkdown = computed(() => {
@@ -75,7 +77,7 @@ watch(
   () => props.modelValue,
   async (val) => {
     if (val && props.id && props.type) {
-      const token = localStorage.getItem('token') || ''
+      const token = userStore.token
       await start(props.apiEndpoint, {
         id: props.id,
         type: props.type

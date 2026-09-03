@@ -258,17 +258,19 @@ const handleAdd = () => {
 
 const resetPwd = async (row: UserInfo) => {
   try {
-    await ElMessageBox.confirm(
-      `确定重置用户 "${row.nickname}" 的密码吗？`,
-      '提示',
+    const { value: newPassword } = await ElMessageBox.prompt(
+      `请输入用户 "${row.nickname}" 的新密码`,
+      '重置密码',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        inputType: 'password',
+        inputPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S{8,20}$/,
+        inputErrorMessage: '密码需包含大小写字母和数字，长度8-20位且不能包含空格'
       }
     )
     try{
-      const res = await userApi.resetPwd(row.id)
+      const res = await userApi.resetPwd(row.id, newPassword)
       if(res.code === 200){
         ElMessage.success(`用户 "${row.nickname}" 的密码重置成功`)
       }else{

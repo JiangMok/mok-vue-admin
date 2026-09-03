@@ -177,9 +177,6 @@
     <!-- 处理弹窗 -->
     <el-dialog v-model="resolveVisible" title="标记已处理" width="500px" destroy-on-close>
       <el-form :model="resolveForm" label-width="80px">
-        <el-form-item label="处理人">
-          <el-input v-model="resolveForm.resolvedBy" placeholder="请输入处理人" />
-        </el-form-item>
         <el-form-item label="备注">
           <el-input
             v-model="resolveForm.remark"
@@ -229,7 +226,6 @@ const currentRow = ref<MqFailedMessage | null>(null)
 const resolveVisible = ref(false)
 const resolveLoading = ref(false)
 const resolveForm = reactive({
-  resolvedBy: 'admin',
   remark: ''
 })
 const resolveTargetId = ref('')
@@ -299,7 +295,6 @@ const handleDetail = (row: MqFailedMessage) => {
 
 const handleResolve = (row: MqFailedMessage) => {
   resolveTargetId.value = row.id
-  resolveForm.resolvedBy = 'admin'
   resolveForm.remark = ''
   resolveVisible.value = true
 }
@@ -308,7 +303,6 @@ const submitResolve = async () => {
   try {
     resolveLoading.value = true
     await mqFailedMessageApi.resolve(resolveTargetId.value, {
-      resolvedBy: resolveForm.resolvedBy,
       remark: resolveForm.remark
     })
     ElMessage.success('已标记为处理完成')

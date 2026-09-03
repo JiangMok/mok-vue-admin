@@ -70,6 +70,14 @@
       width="460px"
     >
       <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="90px">
+        <el-form-item label="当前密码" prop="oldPassword">
+          <el-input
+            v-model="passwordForm.oldPassword"
+            type="password"
+            placeholder="请输入当前密码"
+            show-password
+          />
+        </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
           <el-input
             v-model="passwordForm.newPassword"
@@ -78,7 +86,7 @@
             show-password
           />
           <div class="password-tips">
-            密码需包含字母和数字，长度8-20位
+            密码需包含大写字母、小写字母和数字，长度8-20位
           </div>
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword">
@@ -105,6 +113,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
@@ -114,6 +123,7 @@ import type { PasswordUpdateRequest } from '@/types'
 const formRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
 const userStore = useUserStore()
+const router = useRouter()
 const loading = ref(false)
 const userInfo = reactive({
   id: '',
@@ -142,14 +152,22 @@ const rules = {
 
 const passwordDialogVisible = ref(false)
 const passwordForm = reactive({
+  oldPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
 const passwordRules = {
+  oldPassword: [
+    { required: true, message: '请输入当前密码', trigger: 'blur' }
+  ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { pattern: /^(?=.*[A-Za-z])(?=.*\d).{8,20}$/, message: '密码需包含字母和数字，长度8-20位', trigger: 'blur' }
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S{8,20}$/,
+      message: '密码需包含大写字母、小写字母和数字，长度8-20位且不能包含空格',
+      trigger: 'blur'
+    }
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
@@ -204,22 +222,25 @@ const submitPasswordChange = () => {
     if (valid) {
       changingPassword.value = true
       const submitData: PasswordUpdateRequest = {
-        id: userInfo.id,
-        username: userInfo.username,
-        nickname: userInfo.nickname,
-        password: passwordForm.newPassword,
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword
       }
+      const startingSessionId = userStore.authSessionId
       try{
         const res = await userApi.updateUserPwd(submitData)
-        if(res.code === 200 && res.data){
-          changingPassword.value = false
+        if(res.code === 200){
           passwordDialogVisible.value = false
+          passwordForm.oldPassword = ''
           passwordForm.newPassword = ''
           passwordForm.confirmPassword = ''
-          ElMessage.success(res.msg)
+          ElMessage.success('密码修改成功，请重新登录')
+          const cleared = await userStore.clearIfCurrent(startingSessionId)
+          if (cleared) {
+            await router.replace('/login')
+          }
         }else{
-          ElMessage.success(res.msg)
+          ElMessage.error(res.msg || '密码修改失败')
         }
       }catch (error){
         ElMessage.error(error instanceof Error ? error.message : '密码修改失败')

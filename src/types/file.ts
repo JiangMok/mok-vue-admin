@@ -6,6 +6,7 @@ export interface FileItem {
   originalName: string
   storageName: string
   filePath: string
+  /** 头像为公开 URL；普通文件为需要鉴权的下载 URL。 */
   fileUrl: string
   fileSize: number
   fileType: string
@@ -29,6 +30,7 @@ export interface FileItem {
 export interface FileUploadResponse {
   id: string
   originalName: string
+  /** 头像为公开 URL；普通文件为需要鉴权的下载 URL。 */
   fileUrl: string
   fileSize: number
   fileType: string

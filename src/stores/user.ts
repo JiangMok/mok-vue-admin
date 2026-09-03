@@ -1,7 +1,31 @@
 import { defineStore } from 'pinia'
 import type { UserInfo, MenuItem, ApiPermission, LoginResponse } from '@/types'
+import {
+  beginAuthLogoutOperation,
+  cancelAuthLoginAttempt,
+  AUTH_SESSION_ID_KEY,
+  AUTH_SESSION_STORAGE_KEY,
+  createAuthSessionId,
+  finishAuthLogoutOperation,
+  isAuthLogoutInProgress,
+  readAuthLoginAttempt,
+  readAuthSessionId,
+  readPersistedAuthSession,
+  renewAuthLogoutOperation,
+  writePersistedAuthSession,
+  withAuthLogoutLock,
+  withAuthSessionLock
+} from '@/utils/auth-session'
 
 type SessionCleanupHandler = () => void
+
+export interface StoredUserSession {
+  sessionId: string
+  token: string
+  refreshToken: string
+  roles: string[]
+  userInfo: UserInfo
+}
 
 const sessionCleanupHandlers = new Set<SessionCleanupHandler>()
 
@@ -37,19 +61,23 @@ const readStoredRoles = (): string[] => {
 
 
 export const useUserStore = defineStore('user', {
-  state: () => ({
-    userInfo: null as UserInfo | null,
-    token: localStorage.getItem('token') || '',
-    refreshToken: localStorage.getItem('refreshToken') || '',
-    roles: readStoredRoles(),
-    menus: [] as MenuItem[],
-    apiPermissions: [] as ApiPermission[],  // 新增：API权限列表
-    permissions: [] as string[],  // 合并后的权限列表（包含菜单code和API权限code）
-    permissionsLoaded: false,     // 菜单和API权限是否已完成加载（允许结果为空）
-    permissionsLoading: false,
-    dynamicRoutesLoaded: false,
-    sessionRevision: 0            // 会话切换时递增，用于丢弃旧会话的异步响应
-  }),
+  state: () => {
+    const persistedSession = readPersistedAuthSession()
+    return {
+      userInfo: persistedSession?.userInfo || null as UserInfo | null,
+      authSessionId: persistedSession?.sessionId || readAuthSessionId(),
+      token: persistedSession?.token || localStorage.getItem('token') || '',
+      refreshToken: persistedSession?.refreshToken || localStorage.getItem('refreshToken') || '',
+      roles: persistedSession?.roles || readStoredRoles(),
+      menus: [] as MenuItem[],
+      apiPermissions: [] as ApiPermission[],  // 新增：API权限列表
+      permissions: [] as string[],  // 合并后的权限列表（包含菜单code和API权限code）
+      permissionsLoaded: false,     // 菜单和API权限是否已完成加载（允许结果为空）
+      permissionsLoading: false,
+      dynamicRoutesLoaded: false,
+      sessionRevision: 0            // 会话切换时递增，用于丢弃旧会话的异步响应
+    }
+  },
 
   getters: {
     isLoggedIn: (state) => !!state.token,
@@ -199,31 +227,47 @@ export const useUserStore = defineStore('user', {
     },
 
     // 登录成功后的处理
-    afterLogin(data: LoginResponse) {
-      // 防止同一 SPA 生命周期内切换账号时沿用上一个账号的菜单和动态路由。
-      this.resetAuthorizationState()
-      this.setToken(data.token)
-      this.setRefreshToken(data.refreshToken)
-      this.setRoles(data.roles || [])
+    async afterLogin(data: LoginResponse) {
+      await withAuthSessionLock(() => {
+        if (isAuthLogoutInProgress()) {
+          throw new Error('注销操作尚未完成，请稍后重新登录')
+        }
+        if (data.authOperationId && readAuthLoginAttempt() !== data.authOperationId) {
+          throw new Error('登录操作已失效，请使用最新一次登录结果')
+        }
+        // 防止同一 SPA 生命周期内切换账号时沿用上一个账号的菜单和动态路由。
+        this.resetAuthorizationState()
+        this.setToken(data.token)
+        this.setRefreshToken(data.refreshToken)
+        this.setRoles(data.roles || [])
 
-      this.setUserInfo({
-        id: data.userId,
-        username: data.username,
-        nickname: data.nickname,
-        phone: '',
-        email: '',
-        avatar: data.avatar || null,
-        status: 1,
-        createTime: new Date().toISOString(),
-        updateTime: new Date().toISOString()
+        this.setUserInfo({
+          id: data.userId,
+          username: data.username,
+          nickname: data.nickname,
+          phone: '',
+          email: '',
+          avatar: data.avatar || null,
+          status: 1,
+          createTime: new Date().toISOString(),
+          updateTime: new Date().toISOString()
+        })
+
+        const sessionId = createAuthSessionId()
+        this.authSessionId = sessionId
+        // 兼容旧代码的分散字段先写入，完整会话快照作为最终原子提交点。
+        localStorage.setItem(AUTH_SESSION_ID_KEY, sessionId)
+        writePersistedAuthSession({
+          sessionId,
+          token: data.token,
+          refreshToken: data.refreshToken,
+          roles: data.roles || [],
+          userInfo: this.userInfo as UserInfo
+        })
+        if (data.authOperationId && readAuthLoginAttempt() === data.authOperationId) {
+          cancelAuthLoginAttempt()
+        }
       })
-
-      localStorage.setItem('userInfo', JSON.stringify({
-        id: data.userId,
-        username: data.username,
-        nickname: data.nickname,
-        avatar: data.avatar
-      }))
     },
 
     // 其他方法保持不变...
@@ -235,6 +279,19 @@ export const useUserStore = defineStore('user', {
         nickname: info?.nickname,
         avatar: info?.avatar
       }))
+    },
+
+    async setUserInfoIfCurrent(info: UserInfo, expectedSessionId: string) {
+      return withAuthSessionLock(() => {
+        const session = readPersistedAuthSession()
+        if (!session || session.sessionId !== expectedSessionId ||
+          session.userInfo.id !== info.id) {
+          return false
+        }
+        this.setUserInfo(info)
+        writePersistedAuthSession({ ...session, userInfo: info })
+        return true
+      })
     },
 
     setToken(token: string) {
@@ -252,18 +309,77 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('roles', JSON.stringify(this.roles))
     },
 
-    async logout() {
-      try {
-        const { authApi } = await import('@/api/modules/auth')
-        await authApi.logout()
-      } catch (error) {
-        console.error('退出登录失败:', error)
-      } finally {
-        this.clear()
+    /**
+     * 接管其他标签页已经写入 localStorage 的完整会话。
+     * 这里只同步 Pinia 状态，避免重复写 storage 触发标签页之间的事件回环。
+     */
+    synchronizeStoredSession(session: StoredUserSession) {
+      const accountChanged = Boolean(this.userInfo?.id && this.userInfo.id !== session.userInfo.id)
+      const sessionChanged = this.authSessionId !== session.sessionId
+      const rolesChanged = this.roles.length !== session.roles.length ||
+        this.roles.some(role => !session.roles.includes(role))
+
+      if (accountChanged || sessionChanged || rolesChanged) {
+        this.resetAuthorizationState()
       }
+
+      this.token = session.token
+      this.refreshToken = session.refreshToken
+      this.roles = [...new Set(session.roles)]
+      this.userInfo = session.userInfo
+      this.authSessionId = session.sessionId
+      return accountChanged
+    },
+
+    async logout() {
+      const startingSessionId = this.authSessionId || readAuthSessionId()
+      const startingRefreshToken = this.refreshToken || localStorage.getItem('refreshToken') || ''
+      await withAuthLogoutLock(async () => {
+        // 先登记带租约的注销操作，新登录会等服务端 sessionVersion 失效完成。
+        const logoutOperationId = await withAuthSessionLock(() => {
+          if (readAuthSessionId() !== startingSessionId) return false
+          const operationId = beginAuthLogoutOperation()
+          cancelAuthLoginAttempt()
+          return operationId
+        })
+        if (!logoutOperationId) return
+
+        const leaseTimer = window.setInterval(
+          () => renewAuthLogoutOperation(logoutOperationId), 10000)
+        try {
+          const { authApi } = await import('@/api/modules/auth')
+          // 不持有写锁，access 过期时允许请求拦截器先安全刷新再重试注销。
+          await authApi.logout(startingRefreshToken, startingSessionId)
+        } catch (error) {
+          console.error('退出登录失败:', error)
+        } finally {
+          window.clearInterval(leaseTimer)
+          await withAuthSessionLock(() => {
+            try {
+              if (!readAuthSessionId() || readAuthSessionId() === startingSessionId) {
+                this.clear()
+              }
+            } finally {
+              finishAuthLogoutOperation(logoutOperationId)
+            }
+          })
+        }
+      })
+    },
+
+    async clearIfCurrent(expectedSessionId: string) {
+      return withAuthSessionLock(() => {
+        const currentSessionId = readAuthSessionId()
+        if (currentSessionId && currentSessionId !== expectedSessionId) {
+          return false
+        }
+        this.clear()
+        return true
+      })
     },
 
     clear() {
+      this.authSessionId = ''
       this.token = ''
       this.refreshToken = ''
       this.userInfo = null
@@ -273,12 +389,31 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('userInfo')
       localStorage.removeItem('roles')
+      // 完整会话快照最后删除，作为跨标签页清理完成的原子提交点。
+      localStorage.removeItem(AUTH_SESSION_ID_KEY)
+      localStorage.removeItem(AUTH_SESSION_STORAGE_KEY)
     },
 
     init() {
+      const persistedSession = readPersistedAuthSession()
+      if (persistedSession) {
+        this.authSessionId = persistedSession.sessionId
+        this.token = persistedSession.token
+        this.refreshToken = persistedSession.refreshToken
+        this.userInfo = persistedSession.userInfo
+        this.roles = persistedSession.roles
+        return
+      }
+
       const token = localStorage.getItem('token')
       const refreshToken = localStorage.getItem('refreshToken')
       const userInfoStr = localStorage.getItem('userInfo')
+      let sessionId = readAuthSessionId()
+      if (token && !sessionId) {
+        sessionId = createAuthSessionId()
+        localStorage.setItem(AUTH_SESSION_ID_KEY, sessionId)
+      }
+      this.authSessionId = sessionId
       if (token) {
         this.token = token
       }
@@ -296,6 +431,15 @@ export const useUserStore = defineStore('user', {
       }
 
       this.roles = readStoredRoles()
+      if (sessionId && token && refreshToken && this.userInfo) {
+        writePersistedAuthSession({
+          sessionId,
+          token,
+          refreshToken,
+          roles: this.roles,
+          userInfo: this.userInfo
+        })
+      }
     }
   }
 })

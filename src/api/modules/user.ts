@@ -26,8 +26,8 @@ export const userApi = {
   updateUserPwd: (data: PasswordUpdateRequest): Promise<ApiResponse<string>> => {
     return request.post('/user/updatePwd', data)
   },
-  resetPwd: (id: string): Promise<ApiResponse> => {
-    return request.put(`/user/resetPwd/${id}`)
+  resetPwd: (id: string, newPassword: string): Promise<ApiResponse<string>> => {
+    return request.put(`/user/resetPwd/${id}`, { newPassword })
   },
   deleteUser: (id: string) => {
     return request.delete(`/user/delete/${id}`)

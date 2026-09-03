@@ -105,7 +105,7 @@
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <keep-alive :include="cachedTabs">
-                <component :is="Component" :key="route.fullPath" />
+                <component :is="Component" :key="viewKey" />
               </keep-alive>
             </transition>
           </router-view>
@@ -138,6 +138,7 @@ watch(() => route.fullPath, () => {
 })
 
 const cachedTabs = computed(() => tabsStore.cachedTabs)
+const viewKey = computed(() => `${userStore.sessionRevision}:${route.fullPath}`)
 const activeMenu = computed(() => route.path)
 const menus = computed(() => userStore.menus)
 const hasMenu = computed(() => menus.value && menus.value.length > 0)
@@ -177,6 +178,11 @@ watch(
   },
   { immediate: true }
 )
+
+watch(() => userStore.sessionRevision, () => {
+  // 切换账号或角色时销毁旧页面缓存，避免沿用上一会话的局部数据。
+  tabsStore.closeAllTabs()
+})
 
 // 当前时间
 const currentTime = ref('')

@@ -58,6 +58,7 @@ mok-vue-admin/
 │   │   ├── element-plus.d.ts   # Element Plus 语言包类型
 │   │   └── index.ts            # 全局类型（响应、用户、权限等）
 │   ├── utils/                  # 工具函数
+│   │   ├── auth-session.ts     # 跨标签会话快照与并发协调
 │   │   ├── formatter.ts        # 日期、JSON 格式化
 │   │   ├── icons.ts            # 图标映射
 │   │   └── request.ts          # Axios 请求封装（拦截器、Token 刷新）
@@ -90,6 +91,9 @@ mok-vue-admin/
 Node.js `^20.19.0` 或 `>=22.12.0`
 
 包管理器npm
+
+浏览器建议使用支持 Web Locks API 的现代版本 Chrome、Edge、Firefox 或 Safari，
+用于保证多标签页 Token 轮换只执行一次；不支持时会停止自动续期并要求重新登录。
 
 #### 安装
 ##### 克隆项目

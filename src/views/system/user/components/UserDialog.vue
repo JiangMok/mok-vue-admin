@@ -34,7 +34,7 @@
           show-password
           :maxlength="20"
         />
-        <div class="form-tips">密码长度6-20位，必须包含大小写字母和数字</div>
+        <div class="form-tips">密码长度8-20位，必须包含大小写字母和数字</div>
       </el-form-item>
 
       <!-- 确认密码（新增用户时才显示） -->
@@ -252,6 +252,11 @@ const submitLoading = ref(false)
 const avatarUrl = ref('')
 const uploadUrl = ref(import.meta.env.VITE_API_BASE_URL+'/files/uploadAvatar')
 const uploadHeaders = ref({})
+watch(() => userStore.token, (token) => {
+  uploadHeaders.value = token
+    ? { Authorization: `Bearer ${token}` }
+    : {}
+}, { immediate: true })
 
 // ================== 新增：计算属性 ==================
 // 计算对话框标题
@@ -283,14 +288,14 @@ const formRules: FormRules = {
       trigger: 'blur'
     },
     {
-      min: 6,
+      min: 8,
       max: 20,
-      message: '密码长度在 6 到 20 个字符',
+      message: '密码长度在 8 到 20 个字符',
       trigger: 'blur'
     },
     {
-      // pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*]{6,20}$/,
-      message: '密码必须包含大小写字母和数字',
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S{8,20}$/,
+      message: '密码必须包含大小写字母和数字，且不能包含空格',
       trigger: 'blur'
     }
   ],
@@ -547,10 +552,11 @@ const handleSubmit = async () => {
     const editData = props.editData
     if (props.isEdit && editData) {
       // 编辑用户
+      const requestSessionId = userStore.authSessionId
       const res = await userApi.updateUser({ id: editData.id, ...submitData })
       //如果是修改的当前帐号,则把userStore里的缓存信息一并修改
       if(userStore.userId == editData.id){
-        userStore.setUserInfo({
+        await userStore.setUserInfoIfCurrent({
           createTime: "",
           id: editData.id,
           updateTime: "",
@@ -560,7 +566,7 @@ const handleSubmit = async () => {
           phone: submitData.phone,
           email: submitData.email,
           avatar: submitData.avatar
-        })
+        }, requestSessionId)
       }
       if(res.code === 200){
         ElMessage.success('用户更新成功')
@@ -613,14 +619,6 @@ watch(() => props.visible, async (newVal) => {
 
 // ================== 新增：组件挂载时初始化 ==================
 onMounted(() => {
-  // 设置上传请求头
-  const token = localStorage.getItem('token')
-  if (token) {
-    uploadHeaders.value = {
-      Authorization: `Bearer ${token}`
-    }
-  }
-
   // 提前加载角色列表和部门树，提升用户体验
   fetchRoleList()
   fetchDeptTree()

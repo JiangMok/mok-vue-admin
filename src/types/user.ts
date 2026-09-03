@@ -58,9 +58,7 @@ export interface UserRequestData {
 }
 
 export interface PasswordUpdateRequest {
-  id: string
-  username: string
-  nickname: string
-  password: string
+  oldPassword: string
+  newPassword: string
   confirmPassword: string
 }

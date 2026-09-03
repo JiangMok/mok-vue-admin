@@ -19,7 +19,7 @@ export const mqFailedMessageApi = {
   delete: (id: string): Promise<ApiResponse> => {
     return request.delete(`/mq-failed-message/${id}`)
   },
-  resolve: (id: string, data: { resolvedBy: string; remark: string }): Promise<ApiResponse> => {
+  resolve: (id: string, data: { remark: string }): Promise<ApiResponse> => {
     return request.put(`/mq-failed-message/${id}/resolve`, data)
   }
 }

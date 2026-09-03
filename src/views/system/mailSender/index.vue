@@ -33,7 +33,13 @@
           <el-input v-model="formData.username" placeholder="SMTP 认证用户名" clearable />
         </el-form-item>
         <el-form-item label="认证密码" prop="password">
-          <el-input v-model="formData.password" type="password" placeholder="留空则不修改" show-password clearable />
+          <el-input
+            v-model="formData.password"
+            type="password"
+            :placeholder="formData.id ? '留空则不修改' : '首次配置必须填写'"
+            show-password
+            clearable
+          />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="formData.status">
@@ -51,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormItemRule, type FormRules } from 'element-plus'
 import { mailSenderApi } from '@/api'
 import type { MailSenderFormData } from '@/types'
 
@@ -69,11 +75,20 @@ const formData = reactive<MailSenderFormData>({
   status: 1
 })
 
+const passwordRule: FormItemRule = {
+  validator: (_rule, value, callback) => {
+    if (!formData.id && !value) callback(new Error('首次配置必须填写认证密码'))
+    else callback()
+  },
+  trigger: 'blur'
+}
+
 const formRules: FormRules = {
   host: [{ required: true, message: '请输入 SMTP 服务器地址', trigger: 'blur' }],
   port: [{ required: true, message: '请输入端口', trigger: 'blur' }],
   fromAddress: [{ required: true, message: '请输入发件人地址', trigger: 'blur' }],
   username: [{ required: true, message: '请输入认证用户名', trigger: 'blur' }],
+  password: [passwordRule],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
@@ -104,10 +119,12 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitLoading.value = true
     const submitData: MailSenderFormData = { ...formData }
-    if (!submitData.password) delete submitData.password
+    if (formData.id && !submitData.password) delete submitData.password
     const res = await mailSenderApi.updateConfig(submitData)
-    if (res.code === 200) ElMessage.success('发件箱配置保存成功（已热刷新）')
-    else ElMessage.error(res.msg || '保存失败')
+    if (res.code === 200) {
+      ElMessage.success('发件箱配置保存成功（事务提交后已热刷新）')
+      await fetchConfig()
+    } else ElMessage.error(res.msg || '保存失败')
   } catch (error: any) {
     if (error?.fields) ElMessage.error('请正确填写表单信息')
     else ElMessage.error(error?.msg || '保存失败')
